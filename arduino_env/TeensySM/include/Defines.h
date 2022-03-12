@@ -1,0 +1,2 @@
+#define STEPPER_ACTIVATION 10
+#define STEPPER_DIR 

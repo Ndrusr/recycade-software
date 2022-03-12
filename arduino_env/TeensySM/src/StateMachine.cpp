@@ -2,16 +2,21 @@
 
 namespace StateMachine{
     RecSM::RecSM(){
-        currentState = 0x0;
-        allStates=0x0, 0x1, 0x2;
+        debug = true;
     }
 
-    unsigned char const* RecSM::debugState(){
+    RecSM::~RecSM(){
+        delete[] allStates;
+    }
+
+    const char* RecSM::debugState(){
         if(debug){
             return allStates;
         }else{
             return nullptr;
         }
     }
+
+    
 
 }
