@@ -3,6 +3,7 @@
 #include"Defines.h"
 #include<AccelStepper.h>
 #include<MultiStepper.h>
+#include<ros.h>
 
 StateMachine::RecSM recycade;
 AccelStepper xStepper(1, STEPPER_STEP_X, STEPPER_DIR_X);
