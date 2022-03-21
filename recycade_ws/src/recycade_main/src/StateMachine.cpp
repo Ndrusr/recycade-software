@@ -1,4 +1,4 @@
-#include"StateMachine.h"
+#include<recycade_main/StateMachine.h>
 
 namespace StateMachine{
     RecSM::RecSM(){
@@ -20,13 +20,13 @@ namespace StateMachine{
     void RecSM::setState(const char* event){
         const char* mapIn {currentState+event};
     }
-    RecSM::State::State(){
+    State::State(){
         func = [](){};
     }
-    RecSM::State::State(void(*func_in)()){
+    State::State(void(*func_in)()){
         func = func_in;
     }
-    void RecSM::State::run(){
+    void State::run(){
         func();
     }
 }

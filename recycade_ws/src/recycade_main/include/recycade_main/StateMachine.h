@@ -1,13 +1,7 @@
 #include<map>
 namespace StateMachine{
-class RecSM{
 
-protected:
-    char currentState{'0'};
-    const char* allStates{"012"};
-    bool debug; 
-
-    class State{
+class State{
     protected:
         void (*func)();
 
@@ -17,6 +11,15 @@ protected:
         State(void(*func_in)());
         void run();
     };
+    
+class RecSM{
+
+protected:
+    char currentState{'0'};
+    const char* allStates{"012"};
+    bool debug; 
+
+    
     std::map<const char*, State> stateMap;
 
 public:
