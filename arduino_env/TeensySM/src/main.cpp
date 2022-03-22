@@ -65,6 +65,11 @@ void debugMotors(){
 void setup() {
   
   nh_.initNode();
+  nh_.getHardware()->setBaud(115200);
+
+  nh_.advertise(callbackPub);
+  nh_.subscribe(boolSub);
+  
 
   pinMode(STEPPER_ACTIVATION_X, OUTPUT);
   pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
@@ -81,8 +86,7 @@ void setup() {
   coreSteppers.addStepper(xStepper);
   coreSteppers.addStepper(yStepper);
 
-  nh_.subscribe(boolSub);
-  nh_.advertise(callbackPub);
+  
 }
 
 void loop() {
