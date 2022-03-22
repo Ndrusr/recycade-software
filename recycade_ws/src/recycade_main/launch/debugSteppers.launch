@@ -7,7 +7,11 @@
     <node pkg = "rosserial_server" type ="serial_node" name = "rosserial_server_main" output="screen" respawn="true">
         <rosparam>
             port: /dev/ttyACM0
-            baud: 9600
+            require:
+                publishers: [ /teensy/callback ]
+                subscribers: [ /teensy/chatter ]
         </rosparam>
     </node>
+    <node pkg="rosserial_python" type="message_info_service.py"
+        name="rosserial_message_info" />
 </launch>
