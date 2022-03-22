@@ -12,7 +12,7 @@
 AccelStepper xStepper(1, STEPPER_STEP_X, STEPPER_DIR_X);
 AccelStepper yStepper(1, STEPPER_STEP_Y, STEPPER_DIR_Y);
 MultiStepper coreSteppers;
-bool debug;
+bool debug{false};
 
 ros::NodeHandle nh_;
 
@@ -30,6 +30,7 @@ void game(){
 }
 
 void pub_response(const std_msgs::Bool &debugMsg){
+  debug = true;
   whichMotor = debugMsg.data;
 }
 
