@@ -82,6 +82,7 @@ void setup() {
   coreSteppers.addStepper(yStepper);
 
   nh_.subscribe(boolSub);
+  nh_.advertise(callbackPub);
 }
 
 void loop() {
