@@ -1,15 +1,15 @@
 #include<ros/ros.h>
 #include<std_msgs/Bool.h>
-#include<std_msgs/Char.h>
+#include<std_msgs/String.h>
 
 std_msgs::Bool teensyMsg;
 ros::Publisher teensyPub;
 
-void subToPub( const std_msgs::Char::ConstPtr &charMsg ){
-    char content = charMsg->data;
-    if(content == 'x')
+void subToPub( const std_msgs::String::ConstPtr &charMsg ){
+    std::string content = charMsg->data;
+    if(content == "x")
         teensyMsg.data = true;
-    else if(content == 'y')
+    else if(content == "y")
         teensyMsg.data = false;
     else
         return;

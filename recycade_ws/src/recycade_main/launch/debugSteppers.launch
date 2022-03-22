@@ -1,7 +1,7 @@
 <launch>
 
     <!--debug node-->
-    <node name="debug_node" pkg = "recycade_main" type = "StepperDebug" output = "screen"/>
+    <node name="debug_node" pkg = "recycade_main" type = "recycade_main_stepper_debug" output = "screen"/>
 
     <!--rosserial node-->
     <node pkg = "rosserial_server" type ="serial_node" name = "rosserial_server_main" output="screen" respawn="true">

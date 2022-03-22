@@ -28,10 +28,14 @@ void scanning(){
 void game(){
   
 }
+std_msgs::Bool* callbackMsg;
+ros::Publisher callbackPub("teensy/callback", callbackMsg);
 
 void pub_response(const std_msgs::Bool &debugMsg){
   debug = true;
   whichMotor = debugMsg.data;
+  callbackMsg->data = debugMsg.data;
+  callbackPub.publish(callbackMsg);
 }
 
 ros::Subscriber<std_msgs::Bool> boolSub("teensy/chatter", &pub_response);
