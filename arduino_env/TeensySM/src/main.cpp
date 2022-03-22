@@ -65,6 +65,9 @@ void setup() {
   pinMode(STEPPER_ACTIVATION_X, OUTPUT);
   pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
 
+  digitalWrite(STEPPER_ACTIVATION_X, LOW);
+  digitalWrite(STEPPER_ACTIVATION_Y, LOW);
+
   xStepper.setMaxSpeed(400);
   xStepper.setSpeed(400);
   

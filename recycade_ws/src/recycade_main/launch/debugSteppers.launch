@@ -1,0 +1,14 @@
+<launch>
+
+    <!--debug node-->
+    <node name="debug_node" pkg = "recycade_main" type = "StepperDebug" output = "screen"/>
+
+    <!--rosserial node-->
+    <node pkg = "rosserial_server" type ="serial_node" name = "rosserial_server_main" output="screen" respawn="true">
+        <rosparam>
+            port: /dev/ttyACM0
+            baud: 9600
+            spin_rate: 0.5
+        </rosparam>
+    </node>
+</launch>
