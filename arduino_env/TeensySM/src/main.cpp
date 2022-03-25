@@ -1,5 +1,3 @@
-#define USE_TEENSY_HW_SERIAL
-
 #include <Arduino.h>
 #include"Defines.h"
 
