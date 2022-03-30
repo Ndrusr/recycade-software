@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include"Defines.h"
 
+#include<TeensyThreads.h>
 #include<AccelStepper.h>
 #include<MultiStepper.h>
 
@@ -10,6 +11,8 @@ MultiStepper coreSteppers;
 bool debug{false};
 AccelStepper *allSteppers[4];
 float irReading{0};
+
+Threads threads;
 
 bool whichMotor;
 
@@ -25,12 +28,18 @@ void scanning(){
 
 void game(){
   Serial.print(2);
-  digitalWrite(STEPPER_ACTIVATION_X, HIGH);
-  digitalWrite(STEPPER_ACTIVATION_Y, HIGH);
-  static bool game_over = false;
-  while(!game_over){
-      
+  for(auto st: gameSteppers){
+    st.enableOutputs();
   }
+  static bool game_over = false;
+  //threads.addThread()
+  while(!game_over){
+
+  }
+}
+
+void game_input(){
+
 }
 
 
@@ -81,6 +90,7 @@ void setup() {
   for(AccelStepper st: gameSteppers){
     st.setMaxSpeed(1000);
     st.setSpeed(400);
+
     coreSteppers.addStepper(st);
   }
   
