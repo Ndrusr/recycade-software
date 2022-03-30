@@ -4,52 +4,48 @@
 #include<AccelStepper.h>
 #include<MultiStepper.h>
 
-#include<ros.h>
-#include<std_msgs/Bool.h>
-
-AccelStepper xStepper(1, STEPPER_STEP_X, STEPPER_DIR_X);
-AccelStepper yStepper(1, STEPPER_STEP_Y, STEPPER_DIR_Y);
+AccelStepper gameSteppers[] = {AccelStepper(1, STEPPER_STEP_X, STEPPER_DIR_X), AccelStepper(1, STEPPER_STEP_Y,STEPPER_DIR_Y)};
+AccelStepper scanSteppers[] = {AccelStepper(1, SCAN_STEP_SLIDER, SCAN_DIR_SLIDER), AccelStepper(1, SCAN_STEP_SORTING, SCAN_DIR_SORTING)};
 MultiStepper coreSteppers;
 bool debug{false};
-
-ros::NodeHandle nh_;
-
-
+AccelStepper *allSteppers[4];
+float irReading{0};
 
 bool whichMotor;
 
+void idle(){
+  Serial.print(0);
+  while(true){
+    
+  }
+}
+
 void scanning(){
-  Serial1.begin(9600);
-  
 }
 
 void game(){
-  
-}
-std_msgs::Bool* callbackMsg;
-ros::Publisher callbackPub("teensy/callback", callbackMsg);
-
-void pub_response(const std_msgs::Bool &debugMsg){
-  debug = true;
-  whichMotor = debugMsg.data;
-  callbackMsg->data = debugMsg.data;
-  callbackPub.publish(callbackMsg);
+  Serial.print(2);
+  digitalWrite(STEPPER_ACTIVATION_X, HIGH);
+  digitalWrite(STEPPER_ACTIVATION_Y, HIGH);
+  static bool game_over = false;
+  while(!game_over){
+      
+  }
 }
 
-ros::Subscriber<std_msgs::Bool> boolSub("teensy/chatter", &pub_response);
 
 void debugMotors(){
   
   if(debug){
     if(whichMotor){
-      digitalWrite(STEPPER_ACTIVATION_X, HIGH);
-      digitalWrite(STEPPER_ACTIVATION_Y, LOW);
-      xStepper.runSpeed();
+      gameSteppers[0].enableOutputs();
+      gameSteppers[1].disableOutputs();
+      gameSteppers[0].runSpeed();
 
     }else{
-      digitalWrite(STEPPER_ACTIVATION_Y, HIGH);
-      digitalWrite(STEPPER_ACTIVATION_X, LOW);
-      yStepper.runSpeed();
+      gameSteppers[1].enableOutputs();
+      gameSteppers[0].disableOutputs();
+      gameSteppers[1].runSpeed();
     }
     
     
@@ -62,34 +58,36 @@ void debugMotors(){
 
 void setup() {
   
-  nh_.initNode();
-  nh_.getHardware()->setBaud(115200);
-
-  nh_.advertise(callbackPub);
-  nh_.subscribe(boolSub);
-  
+  Serial.begin(57600);
 
   pinMode(STEPPER_ACTIVATION_X, OUTPUT);
   pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
+  pinMode(SCAN_ACTIVATION, OUTPUT);
 
-  digitalWrite(STEPPER_ACTIVATION_X, LOW);
-  digitalWrite(STEPPER_ACTIVATION_Y, LOW);
+  gameSteppers[0].setEnablePin(STEPPER_ACTIVATION_X);
+  gameSteppers[1].setEnablePin(STEPPER_ACTIVATION_Y);
+  scanSteppers[0].setEnablePin(SCAN_ACTIVATION);
+  scanSteppers[1].setEnablePin(SCAN_ACTIVATION); 
 
-  xStepper.setMaxSpeed(400);
-  xStepper.setSpeed(400);
-  
-  yStepper.setMaxSpeed(400);
-  yStepper.setSpeed(400);
-  
-  coreSteppers.addStepper(xStepper);
-  coreSteppers.addStepper(yStepper);
+  for(int i = 0; i < 2; i++){
+    allSteppers[i] = &gameSteppers[i];
+    allSteppers[i+2] = &scanSteppers[i];
+  }
 
+  for(AccelStepper *stp: allSteppers){
+    stp->disableOutputs();
+  }
+
+  for(AccelStepper st: gameSteppers){
+    st.setMaxSpeed(1000);
+    st.setSpeed(400);
+    coreSteppers.addStepper(st);
+  }
   
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   debugMotors();
-  nh_.spinOnce();
-  
+
 }
