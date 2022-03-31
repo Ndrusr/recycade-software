@@ -14,6 +14,8 @@ float irReading{0};
 
 Threads threads;
 
+int threadID;
+
 bool whichMotor;
 
 void idle(){
@@ -34,8 +36,12 @@ void game(){
   static bool game_over = false;
   //threads.addThread()
   while(!game_over){
-
+    coreSteppers.run();
+    if(false){
+      game_over = !game_over;
+    }
   }
+  return;
 }
 
 void game_input(){
@@ -86,12 +92,13 @@ void setup() {
   for(AccelStepper *stp: allSteppers){
     stp->disableOutputs();
   }
-
+  int count = 0;
   for(AccelStepper st: gameSteppers){
     st.setMaxSpeed(1000);
-    st.setSpeed(400);
+    st.setSpeed(400*(1*(!count)+(count)*tan(0.1309)));
 
     coreSteppers.addStepper(st);
+    count++ ;
   }
   
 }
