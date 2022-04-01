@@ -10,3 +10,17 @@
 #define SCAN_STEP_SORTING 19
 #define SCAN_DIR_SLIDER 22
 #define SCAN_STEP_SLIDER 23
+
+    enum LIMITS{
+        X = 860,
+        Y = 760,
+        STEP_X = 68800,
+        STEP_Y = 60800
+    };
+
+    enum DETECT{
+        BOTTLE = 1,
+        CAN = 0
+    };
+
+volatile bool detected;

@@ -1,6 +1,27 @@
 #include <Arduino.h>
 #include"Defines.h"
+/*
+  X - STEPPER
+    ACTIVATION PIN: 12
+    STEP PIN: 5
+    DIR PIN: 6
+  
+  Y - STEPPER
+    ACTIVATION PIN: 9
+    STEP PIN: 3
+    DIR PIN: 4
+  
+  SLIDER STEPPER
+    ACTIVATION PIN: 2
+    STEP PIN: 23
+    DIR PIN: 22
 
+  SORTING STEPPER
+    ACTIVATION PIN: 2
+    STEP PIN: 19
+    DIR PIN: 18
+
+*/
 #include<TeensyThreads.h>
 #include<AccelStepper.h>
 #include<MultiStepper.h>
@@ -11,8 +32,6 @@ MultiStepper coreSteppers;
 bool debug{false};
 AccelStepper *allSteppers[4];
 float irReading{0};
-
-Threads threads;
 
 int threadID;
 
@@ -25,22 +44,27 @@ void idle(){
   }
 }
 
-void scanning(){
-}
+// void scanning(){
+//   if(detected){
+//     Serial.print();
+//     while(Serial.readBytes()!=)
+//   }
+// }
 
 void game(){
   Serial.print(2);
   for(auto st: gameSteppers){
     st.enableOutputs();
   }
-  static bool game_over = false;
-  //threads.addThread()
+  volatile bool game_over = false;
+  threadID = threads.addThread(game_input);
   while(!game_over){
     coreSteppers.run();
     if(false){
       game_over = !game_over;
     }
   }
+  threads.kill(threadID);
   return;
 }
 
@@ -50,7 +74,7 @@ void game_input(){
 
 
 void debugMotors(){
-  
+  whichMotor = false;
   if(debug){
     if(whichMotor){
       gameSteppers[0].enableOutputs();
@@ -60,7 +84,11 @@ void debugMotors(){
     }else{
       gameSteppers[1].enableOutputs();
       gameSteppers[0].disableOutputs();
-      gameSteppers[1].runSpeed();
+      while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
+        gameSteppers[1].runSpeed();
+      }
+      delay(1000);
+      gameSteppers[1].setSpeed(gameSteppers[1].speed()*-1);
     }
     
     
@@ -100,6 +128,7 @@ void setup() {
     coreSteppers.addStepper(st);
     count++ ;
   }
+  debug = true;
   
 }
 
