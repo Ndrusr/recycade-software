@@ -11,6 +11,9 @@
 #define SCAN_DIR_SLIDER 22
 #define SCAN_STEP_SLIDER 23
 
+#define INPUT_DIR 
+#define STEP_PEDAL
+
     enum LIMITS{
         X = 860,
         Y = 760,

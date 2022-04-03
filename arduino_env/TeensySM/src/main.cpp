@@ -51,6 +51,10 @@ void idle(){
 //   }
 // }
 
+void game_input(){
+
+}
+
 void game(){
   Serial.print(2);
   for(auto st: gameSteppers){
@@ -68,10 +72,29 @@ void game(){
   return;
 }
 
-void game_input(){
-
+void calibMotors(){
+  long target[2]{-100000, -100000};
+  coreSteppers.moveTo(target);
+  for(auto st : gameSteppers){
+    st.enableOutputs();
+    st.setSpeed(-500);
+  }
+  bool xStop = false, yStop = false;
+  while (!(xStop && yStop)){
+    coreSteppers.run();
+    if(digitalRead(11)){
+      xStop = !xStop;
+      gameSteppers[0].disableOutputs();
+    }
+    if(digitalRead(10)){
+      yStop = !yStop;
+      gameSteppers[1].disableOutputs();
+    }
+  }
+  for(auto st: gameSteppers){
+    st.setCurrentPosition(0);
+  }
 }
-
 
 void debugMotors(){
   whichMotor = false;
@@ -84,6 +107,7 @@ void debugMotors(){
     }else{
       gameSteppers[1].enableOutputs();
       gameSteppers[0].disableOutputs();
+      
       while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
         gameSteppers[1].runSpeed();
       }
@@ -118,6 +142,7 @@ void setup() {
   }
 
   for(AccelStepper *stp: allSteppers){
+    stp->setPinsInverted(false, false, false);
     stp->disableOutputs();
   }
   int count = 0;

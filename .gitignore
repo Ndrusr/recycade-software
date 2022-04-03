@@ -55,3 +55,4 @@ CATKIN_IGNORE
 */.vscode
 workspace.code-workspace
 38cce82f25cddf30/mmap_address.bin
+experimental_ws/
