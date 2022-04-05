@@ -23,14 +23,12 @@
 
 */
 #include<TeensyThreads.h>
-#include<AccelStepper.h>
-#include<MultiStepper.h>
+// #include<AccelStepper.h>
+// #include<MultiStepper.h>
 
-AccelStepper gameSteppers[] = {AccelStepper(1, STEPPER_STEP_X, STEPPER_DIR_X), AccelStepper(1, STEPPER_STEP_Y,STEPPER_DIR_Y)};
-AccelStepper scanSteppers[] = {AccelStepper(1, SCAN_STEP_SLIDER, SCAN_DIR_SLIDER), AccelStepper(1, SCAN_STEP_SORTING, SCAN_DIR_SORTING)};
-MultiStepper coreSteppers;
+
 bool debug{false};
-AccelStepper *allSteppers[4];
+
 float irReading{0};
 
 int threadID;
@@ -57,13 +55,13 @@ void game_input(){
 
 void game(){
   Serial.print(2);
-  for(auto st: gameSteppers){
-    st.enableOutputs();
-  }
+  // for(auto st: gameSteppers){
+  //   st.enableOutputs();
+  // }
   volatile bool game_over = false;
   threadID = threads.addThread(game_input);
   while(!game_over){
-    coreSteppers.run();
+    // coreSteppers.run();
     if(false){
       game_over = !game_over;
     }
@@ -72,54 +70,32 @@ void game(){
   return;
 }
 
-void calibMotors(){
-  long target[2]{-100000, -100000};
-  coreSteppers.moveTo(target);
-  for(auto st : gameSteppers){
-    st.enableOutputs();
-    st.setSpeed(-500);
-  }
-  bool xStop = false, yStop = false;
-  while (!(xStop && yStop)){
-    coreSteppers.run();
-    if(digitalRead(11)){
-      xStop = !xStop;
-      gameSteppers[0].disableOutputs();
-    }
-    if(digitalRead(10)){
-      yStop = !yStop;
-      gameSteppers[1].disableOutputs();
-    }
-  }
-  for(auto st: gameSteppers){
-    st.setCurrentPosition(0);
-  }
-}
 
-void debugMotors(){
-  whichMotor = false;
-  if(debug){
-    if(whichMotor){
-      gameSteppers[0].enableOutputs();
-      gameSteppers[1].disableOutputs();
-      gameSteppers[0].runSpeed();
 
-    }else{
-      gameSteppers[1].enableOutputs();
-      gameSteppers[0].disableOutputs();
+// void debugMotors(){
+//   whichMotor = false;
+//   if(debug){
+//     if(whichMotor){
+//       gameSteppers[0].enableOutputs();
+//       gameSteppers[1].disableOutputs();
+//       gameSteppers[0].runSpeed();
+
+//     }else{
+//       gameSteppers[1].enableOutputs();
+//       gameSteppers[0].disableOutputs();
       
-      while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
-        gameSteppers[1].runSpeed();
-      }
-      delay(1000);
-      gameSteppers[1].setSpeed(gameSteppers[1].speed()*-1);
-    }
+//       while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
+//         gameSteppers[1].runSpeed();
+//       }
+//       delay(1000);
+//       gameSteppers[1].setSpeed(gameSteppers[1].speed()*-1);
+//     }
     
     
-    // Serial.print("Running motors");
-    // delay(1000);
-  }
-}
+//     // Serial.print("Running motors");
+//     // delay(1000);
+//   }
+// }
 
 
 
@@ -127,38 +103,37 @@ void setup() {
   
   Serial.begin(57600);
 
-  pinMode(STEPPER_ACTIVATION_X, OUTPUT);
-  pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
-  pinMode(SCAN_ACTIVATION, OUTPUT);
+  // pinMode(STEPPER_ACTIVATION_X, OUTPUT);
+  // pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
+  // pinMode(SCAN_ACTIVATION, OUTPUT);
 
-  gameSteppers[0].setEnablePin(STEPPER_ACTIVATION_X);
-  gameSteppers[1].setEnablePin(STEPPER_ACTIVATION_Y);
-  scanSteppers[0].setEnablePin(SCAN_ACTIVATION);
-  scanSteppers[1].setEnablePin(SCAN_ACTIVATION); 
+  // gameSteppers[0].setEnablePin(STEPPER_ACTIVATION_X);
+  // gameSteppers[1].setEnablePin(STEPPER_ACTIVATION_Y);
+  // scanSteppers[0].setEnablePin(SCAN_ACTIVATION);
+  // scanSteppers[1].setEnablePin(SCAN_ACTIVATION); 
 
-  for(int i = 0; i < 2; i++){
-    allSteppers[i] = &gameSteppers[i];
-    allSteppers[i+2] = &scanSteppers[i];
-  }
+  // for(int i = 0; i < 2; i++){
+  //   allSteppers[i] = &gameSteppers[i];
+  //   allSteppers[i+2] = &scanSteppers[i];
+  // }
 
-  for(AccelStepper *stp: allSteppers){
-    stp->setPinsInverted(false, false, false);
-    stp->disableOutputs();
-  }
-  int count = 0;
-  for(AccelStepper st: gameSteppers){
-    st.setMaxSpeed(1000);
-    st.setSpeed(400*(1*(!count)+(count)*tan(0.1309)));
+  // for(AccelStepper *stp: allSteppers){
+  //   stp->setPinsInverted(false, false, false);
+  //   stp->disableOutputs();
+  // }
+  // int count = 0;
+  // for(AccelStepper st: gameSteppers){
+  //   st.setMaxSpeed(1000);
+  //   st.setSpeed(400*(1*(!count)+(count)*tan(0.1309)));
 
-    coreSteppers.addStepper(st);
-    count++ ;
-  }
+  //   coreSteppers.addStepper(st);
+  //   count++ ;
+  // }
   debug = true;
   
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  debugMotors();
+  //debugMotors();
 
 }
