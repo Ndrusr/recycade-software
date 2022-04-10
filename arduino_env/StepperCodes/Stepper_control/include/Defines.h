@@ -36,11 +36,16 @@
 #define X_STOP              3
 #define Y_STOP             14
 
+//ByteBuffer
+
+#define BYTE_COUNT          8
+#define BYTE_COUNT_USB      1
+
     enum LIMITS{
-        X = 860,
-        Y = 760,
-        STEP_X = 68800,
-        STEP_Y = 60800
+        X = 876,
+        Y = 679,
+        STEP_X = 8758,
+        STEP_Y = 13574
     };
 
 volatile bool detected;

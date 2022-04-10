@@ -2,6 +2,9 @@
 #include <Defines.h>
 #include <AccelStepper.h>
 #include <MultiStepper.h>
+#include <stdio.h>
+
+#define DEBUG
 
 /*
   X - STEPPER
@@ -24,57 +27,79 @@
     STEP PIN:       26
     DIR PIN:        28
 */
-AccelStepper gameSteppers[2] = {AccelStepper(1, X_STEP_PIN, X_DIR_PIN), AccelStepper(1, Y_STEP_PIN, Y_DIR_PIN)};
-AccelStepper scanSteppers[2] = {AccelStepper(1, SLIDER_STEP_PIN, SLIDER_DIR_PIN), AccelStepper(1, SCAN_STEP_PIN, SCAN_DIR_PIN)};
+
+AccelStepper *gameSteppers[2] = {new AccelStepper(1, X_STEP_PIN, X_DIR_PIN), new AccelStepper(1, Y_STEP_PIN, Y_DIR_PIN)};
+AccelStepper *scanSteppers[2] = {new AccelStepper(1, SLIDER_STEP_PIN, SLIDER_DIR_PIN), new AccelStepper(1, SCAN_STEP_PIN, SCAN_DIR_PIN)};
 
 MultiStepper coreSteppers;
 AccelStepper *allSteppers[4];
 
+byte inputBytes[BYTE_COUNT];
+char USBBytes[BYTE_COUNT_USB];
+
+#ifdef DEBUG
+template<typename T>
+void sendStuffToSerial(T a, T b){
+  Serial.print("(");
+  Serial.print(a);
+  Serial.print(", ");
+  Serial.print(b);
+  Serial.print(")\n");
+}
+#endif
 void calibMotors(){
   Serial.print("beginning calibration step\n");
   long target[2]{-100000, -100000};
   coreSteppers.moveTo(target);
+
+  sendStuffToSerial<float>(gameSteppers[0]->targetPosition(), gameSteppers[1]->targetPosition());
   
   for(auto st : gameSteppers){
-    st.enableOutputs();
-    st.setSpeed(-100);
+    st->enableOutputs();
+    st->setSpeed(400.0);
   }
   bool xStop = false, yStop = false;
-
-  Serial.print("Beginning move\n");
+  #ifdef DEBUG
+  Serial.print("Beginning move ");
+  
+  sendStuffToSerial<float>(gameSteppers[0]->speed(), gameSteppers[1]->speed());
+  #endif
 
   while (!(xStop && yStop)){
     coreSteppers.run();
-    if(!digitalRead(X_STOP)){
+    if(!digitalRead(X_STOP) && !xStop){
       xStop = !xStop;
       Serial.print(0);
-      gameSteppers[0].stop();
-      gameSteppers[0].disableOutputs();
+      gameSteppers[0]->stop();
+      gameSteppers[0]->disableOutputs();
     }
-    if(!digitalRead(Y_STOP)){
+    if(!digitalRead(Y_STOP) && !yStop){
       Serial.print(1);
       yStop = !yStop;
-      gameSteppers[0].stop();
-      gameSteppers[1].disableOutputs();
+      gameSteppers[0]->stop();
+      gameSteppers[1]->disableOutputs();
     }
   }
+  #ifdef DEBUG
+  Serial.print("Zero Found\n");
+  #endif
   for(auto st: gameSteppers){
-    st.setCurrentPosition(0);
+    st->setCurrentPosition(0);
   }
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial2.begin(115200);
 
-  while(!Serial.available());
+  while(!Serial);
 
   for(int i = 0; i < 2; i++){
-    allSteppers[i] = &gameSteppers[i];
-    allSteppers[i+2] = &scanSteppers[i];
+    allSteppers[i] = gameSteppers[i];
+    allSteppers[i+2] = scanSteppers[i];
   }
 
-  Serial.print("Steppers Init");
+  Serial.print("Steppers Init\n");
 
   int activationPins[4] = {X_ENABLE_PIN, Y_ENABLE_PIN, SLIDER_ENABLE_PIN, SCAN_ENABLE_PIN};
 
@@ -82,27 +107,98 @@ void setup() {
 
   for(AccelStepper *stp: allSteppers){
     stp->setEnablePin(activationPins[count]);
-    stp->setPinsInverted(false, false, false);
-    stp->disableOutputs();
+    stp->setPinsInverted(false, false, true);
+    stp->enableOutputs();
     count++;
   }
 
-  Serial.print("Enable_set");
+  Serial.print("Enable_set\n");
 
   count = 0;
   
-  for(AccelStepper st: gameSteppers){
-    st.setMaxSpeed(1000);
-    st.setSpeed(400*(1*(!count)+(count)*tan(0.1309)));
+  for(AccelStepper *st: gameSteppers){
+    st->setMaxSpeed(3000);
+    st->setSpeed(1500*(count+1));
 
-    coreSteppers.addStepper(st);
+    coreSteppers.addStepper(*st);
     count++ ;
   }
-  Serial.print(gameSteppers[0].speed());
+  #ifdef DEBUG
+  sendStuffToSerial(gameSteppers[0]->maxSpeed(), gameSteppers[1]->maxSpeed());
+  #endif
+  for(AccelStepper *stp: allSteppers){
+    stp->disableOutputs();
+  }
+  #ifdef DEBUG
+  sendStuffToSerial(gameSteppers[0]->speed(), gameSteppers[1]->speed());
+  #endif
   calibMotors();
 
 }
 
+void idle(){
+  for(AccelStepper *st: allSteppers){
+    st->disableOutputs();
+  }
+  memset(inputBytes, 0, sizeof(inputBytes));
+  while(inputBytes[8] != byte(255)){
+    Serial2.readBytes(inputBytes, BYTE_COUNT);
+  }
+  return;
+}
+
+void scanning(){
+  for(AccelStepper *st: scanSteppers){
+    st->enableOutputs();
+  }
+
+}
+
+void game_on(){
+  #ifdef DEBUG
+  Serial.print("game on!\n");
+  #endif
+  while(!Serial2);
+  for(AccelStepper *st: gameSteppers){
+    st->enableOutputs();
+  }
+  scanSteppers[0]->enableOutputs();
+  bool game_over{false};
+  while(!game_over){
+    Serial.readBytes(inputBytes, BYTE_COUNT);
+    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[0])-1*(inputBytes[0])*inputBytes[1]/255));
+    gameSteppers[1]->setSpeed(3000*(1*(!inputBytes[3])-1*(inputBytes[3])*inputBytes[4]/255));
+    #ifdef DEBUG
+    sendStuffToSerial(gameSteppers[0]->speed(), gameSteppers[1]->speed());
+    Serial.print("run!\n");
+    #endif
+    for(auto st: gameSteppers){
+      Serial2.write(st->currentPosition());
+    }
+    coreSteppers.run();
+  }
+}
+
+void PANIC(){
+  Serial.print("KHAAAAAAAAAN!");
+  Serial.print(" Something has gone wrong - Serial has not responded for at least 10s!\n");
+}
+
 void loop() {
-  // put your main code here, to run repeatedly:
+  Serial.setTimeout(10000);
+  USBBytes[0] = '9';
+  Serial.readBytes(USBBytes, BYTE_COUNT_USB);
+  switch(USBBytes[0]){
+    case('0'):
+      idle();
+    case('1'):
+      scanning();
+    case('2'):
+      game_on();
+    case('9'):
+      PANIC();
+  }
+  for(AccelStepper *st: allSteppers){
+    st->disableOutputs();
+  }
 }
