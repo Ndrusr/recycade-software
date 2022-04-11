@@ -10,11 +10,13 @@
 // #define SCAN_STEP_SORTING 19
 // #define SCAN_DIR_SLIDER 22
 // #define SCAN_STEP_SLIDER 23
+#ifndef ARDUINO_H
 #include <Arduino.h>
+#endif
 #define INPUT_DIR A0
 #define STEP_PEDAL 6
 
-const static float rampAngle = 8.5;
+const static float rampAngle = 15;
     enum STPMM{
         X = 10,
         Y = 20
@@ -32,7 +34,8 @@ const static float rampAngle = 8.5;
 
 volatile bool detected;
 
-byte writeBytes[8] {0,0,0,0,0,0,0,0};
+byte writeBytesBuffer[8] {0,0,0,0,0,0,0,0};
+byte writeBytes[8] {0,0,0,0,0,0,0,0};   
 
 void tellMega(){
     for(byte byte: writeBytes){
@@ -41,5 +44,7 @@ void tellMega(){
     
 }
 
-const float milliG = -107.589;
-const float stepG = milliG*STPMM::Y;
+const double milliG = -209.00592334;
+const double stepG = milliG*STPMM::Y;
+
+volatile bool game_over{false};
