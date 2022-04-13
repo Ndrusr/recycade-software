@@ -93,12 +93,12 @@ void calibMotors(){
           uart[i] = Serial1.read();
         }
         check = uart[0] + uart[1] + uart[2] + uart[3] + uart[4] + uart[5] + uart[6] + uart[7];
-        Serial.println(check);
+        Serial.println(check & 0xff);
         Serial.println(uart[8]);
         if (uart[8] == (check & 0xff)){ /*verify the received data as per protocol*/
           Serial.println("chksum clr");
           dist = uart[2] + uart[3] * 256;
-          Serial.println(dist, DEC);
+          Serial.println(dist);
           if(dist <= 20 && !yStop){
             Serial.print(1);
             yStop = !yStop;
