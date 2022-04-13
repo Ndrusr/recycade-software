@@ -25,7 +25,7 @@ const static float rampAngle = 15;
 
     namespace LIMITS{
         const uint16_t X = 8758;
-        const u_int16_t Y = 13574; 
+        const uint16_t Y = 13574; 
     }
     enum DETECT{
         BOTTLE = 1,
@@ -38,13 +38,61 @@ byte writeBytesBuffer[8] {0,0,0,0,0,0,0,0};
 byte writeBytes[8] {0,0,0,0,0,0,0,0};   
 
 void tellMega(){
+    Serial.write(0x679);
     for(byte byte: writeBytes){
-        Serial2.write(byte);
+        Serial.write(byte);
     }
+    Serial.write('\n');
     
 }
+#ifndef DIAGNOSTIC
+#define POTMIN 484
+#define POTMAX 508
+#define POTAVG 496
+#else
+#define POTMIN 0
+#define POTMAX 1023
+#define POTAVG 511.5
+#endif
 
-const double milliG = -209.00592334;
+const double milliG = -320.5128;
 const double stepG = milliG*STPMM::Y;
 
 volatile bool game_over{false};
+
+class Ramp{
+
+private:
+int startX;
+int startY;
+int dir;
+const double grad{tan(radians(15))};
+int rampEnd;
+const double length{700};
+
+public:
+
+Ramp(int xPos, int yPos, bool LR):
+    startX(xPos), startY(yPos)
+{
+    dir = (LR)*(-1) + (!LR)*(1);
+    rampEnd = dir*sin(length) + xPos;
+}
+
+int getDir(){
+    return dir;
+}
+
+int checkPos(int pos){
+    return static_cast<int>((dir*grad*((pos/STPMM::X) - startX) + startY)*STPMM::Y);
+}
+
+int getStartY(){
+    return startY;
+}
+
+int getStartX(){
+    return startX;
+}
+
+};

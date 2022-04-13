@@ -1,7 +1,10 @@
 //#define MULT_LVL
 
-#define DEBUG
-
+//#define DEBUG
+//#define DIAGNOSTIC
+//#define SERIAL_DEBUG
+//#define JUMP_DEBUG
+#include <Arduino.h>
 #include"Defines.h"
 /*
   X - STEPPER
@@ -34,9 +37,13 @@ bool debug{false};
 
 int threadID[2]{0,66535};
 
+int32_t position[2]{0,0};
+
 float speed;
 
 bool depressed = false;
+
+Ramp *ramps[3]{new Ramp(0,0,0), new Ramp(0,0,1), new Ramp(0,0,0)};
 
 
 
@@ -59,58 +66,74 @@ void jump(){
   int elapsedTime = 0;
   elapsedMillis calculateStep = 0;
 
-  Serial.println("Thread spun");
 
   while (elapsedTime < 1435){
+    
     writeBytes[3] = (v < 0);
-    writeBytes[4] =  static_cast<int>(abs(v));
+    writeBytes[4] =  static_cast<int>(abs(v)/3000);
     if (calculateStep > 50){
       elapsedTime += calculateStep;
+      v += stepG*calculateStep*0.001;
       calculateStep = 0;
-      v += stepG;
+      #ifdef JUMP_DEBUG
+      Serial.println(v);
+      #endif
     }
     
   }
-  Serial.println("Jump Terminated.");
+  
 }
 
 void convertPotToSPEED(){
-  while(true){
-  
-  speed = 255*((analogRead(INPUT_DIR)/(511.5))-1);
+  elapsedMillis inputRun = 0;
+  while(!game_over){
+  speed = analogRead(INPUT_DIR);
+  if((speed > (POTMIN) && (speed < (POTMAX)))){
+    speed = 0;
+  }else{
+  speed = 255*((speed/(POTAVG))-1);
+  }
+  #ifndef DIAGNOSTIC
   #ifdef DEBUG
   Serial.println("Run");
   Serial.println(speed);
   #endif
-  writeBytes[0] = (speed < 0);
-  writeBytes[1] = static_cast<int>(abs(speed));
-  Serial.println(writeBytes[1]);
+  writeBytesBuffer[0] = (speed < 0);
+  writeBytesBuffer[1] = static_cast<int>(abs(speed));
   int threadSt = threads.getState(threadID[1]);
+  #ifdef DEBUG
+  Serial.print("ThreadState: ");
+  Serial.println(threadSt);
+  #endif
   if(digitalRead(STEP_PEDAL) && !depressed){
-    depressed = true;
+    
     #ifndef MULT_LVL
       #ifdef DEBUG
       //Serial.print("Jump triggered.\n");
       #endif
       
       if((threadSt != threads.RUNNING)){
+        depressed = true;
         threads.kill(threadID[1]);
         threadID[1] = threads.addThread(jump);
       }
       #ifdef DEBUG 
       else{
-        Serial.println("wtf");
+        Serial.println("not starting new thread!");
       } 
       #endif
     #else
       
     #endif
-  }else{
+  }else if(!digitalRead(STEP_PEDAL) && depressed){
     depressed = false;
+  } 
+  else {
+      
     #ifndef MULT_LVL
     if(threadSt != threads.RUNNING){
-        writeBytes[3] = writeBytes[0];
-        writeBytes[4] = static_cast<int>(writeBytes[1]*tan(radians(rampAngle)));
+      writeBytesBuffer[3] = writeBytes[0];
+      writeBytesBuffer[4] = static_cast<int>(writeBytes[1]*tan(radians(rampAngle)));
         
       }
       
@@ -118,7 +141,32 @@ void convertPotToSPEED(){
       
     #endif
   }
-  Serial.println(writeBytes[4]);
+  #else
+  bool xOrY{false};
+  if(!xOrY){
+    writeBytesBuffer[0] = (speed < 0);
+    writeBytesBuffer[1] = static_cast<int>(abs(speed));
+    writeBytesBuffer[3] = 0;
+    writeBytesBuffer[4] = 0;
+  }else{
+    writeBytesBuffer[3] = (speed < 0);
+    writeBytesBuffer[4] = static_cast<int>(abs(speed));
+    writeBytesBuffer[0] = 0;
+    writeBytesBuffer[1] = 0;
+  }
+  if(digitalRead(STEP_PEDAL)&&!depressed){
+    xOrY = !xOrY;
+    depressed = true;
+  }else{
+    depressed = false;
+  }
+  #endif
+  if (inputRun > 50){
+    for(int i = 0; i < 8; i++){
+      writeBytes[i] = writeBytesBuffer[i];
+    }
+    inputRun = 0;
+  }
   }
 
 }
@@ -133,17 +181,43 @@ void convertPotToSPEED(){
 
 
 void game(){
+  while(!(Serial));
   Serial.print(2);
   // for(auto st: gameSteppers){
   //   st.enableOutputs();
   // }
-  volatile bool game_over = false;
+  game_over = false;
+  threads.setSliceMillis(25);
   threadID[0] = threads.addThread(convertPotToSPEED);
-  
-
+  threadID[1] = threads.addThread(jump);
+  elapsedMillis update_clock = 0;
   while(!game_over){
+    //bool count = 0;
+    
     // coreSteppers.run();
-    tellMega();
+    if (update_clock > 25){
+      
+      tellMega();
+
+      #ifdef SERIAL_DEBUG
+      Serial.println(writeBytes[1]);
+      Serial.println(writeBytes[4]);
+      #endif
+      #ifdef DIAGNOSTIC
+      Serial.print("(");
+      Serial.print(position[0]);
+      Serial.print(", ");
+      Serial.print(position[1]);
+      Serial.println(")");
+      #endif
+      update_clock = 0;
+    }
+    // while(Serial2.read() != 0x5A);
+    // while(Serial2.read() != 0x5B){
+    //   position[count] = Serial2.read();
+    //   count = !count;
+    // }
+  
   }
   Serial.print("Game Over!");
   for(auto thread: threadID){
@@ -185,7 +259,7 @@ void game(){
 void setup() {
   
   Serial.begin(115200);
-  Serial2.begin(115200);
+  //Serial2.begin(115200);
   while(!Serial);
   pinMode(INPUT_DIR, INPUT);
   debug = true;

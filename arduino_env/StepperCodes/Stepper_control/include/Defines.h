@@ -49,3 +49,9 @@
     };
 
 volatile bool detected;
+
+int dist;
+int i;
+int uart[9];
+const int HEADER=0x59;
+int check;

@@ -37,6 +37,9 @@ AccelStepper *allSteppers[4];
 byte inputBytes[BYTE_COUNT];
 char USBBytes[BYTE_COUNT_USB];
 
+int32_t positions[2]{0,0};
+
+
 #ifdef DEBUG
 template<typename T>
 void sendStuffToSerial(T a, T b){
@@ -51,13 +54,14 @@ void calibMotors(){
   Serial.print("beginning calibration step\n");
   long target[2]{-100000, -100000};
   coreSteppers.moveTo(target);
-
+  #ifdef DEBUG
   sendStuffToSerial<float>(gameSteppers[0]->targetPosition(), gameSteppers[1]->targetPosition());
-  
+  #endif
   for(auto st : gameSteppers){
     st->enableOutputs();
-    st->setSpeed(400.0);
+    st->setSpeed(-100.0);
   }
+  gameSteppers[1]->setSpeed(200.0);
   bool xStop = false, yStop = false;
   #ifdef DEBUG
   Serial.print("Beginning move ");
@@ -65,20 +69,54 @@ void calibMotors(){
   sendStuffToSerial<float>(gameSteppers[0]->speed(), gameSteppers[1]->speed());
   #endif
 
-  while (!(xStop && yStop)){
-    coreSteppers.run();
+  while (!(xStop)){
+    gameSteppers[0]->runSpeed();
     if(!digitalRead(X_STOP) && !xStop){
       xStop = !xStop;
       Serial.print(0);
       gameSteppers[0]->stop();
       gameSteppers[0]->disableOutputs();
     }
-    if(!digitalRead(Y_STOP) && !yStop){
-      Serial.print(1);
-      yStop = !yStop;
-      gameSteppers[0]->stop();
-      gameSteppers[1]->disableOutputs();
-    }
+  }
+  Serial1.begin(115200);
+  while(!(Serial1.available() > 0));
+  Serial.println("Beginning y move");
+  
+  while(!yStop){
+    if(Serial1.read() == HEADER) { /*assess data package frame header 0x59*/
+      uart[0]=HEADER;
+      //Serial.println("Header get");
+      if (Serial1.read() == HEADER) { /*assess data package frame header 0x59*/
+        uart[1] = HEADER;
+        //Serial.println("Len clear");
+        for (i = 2; i < 9; i++) { /*save data in array*/
+          uart[i] = Serial1.read();
+        }
+        check = uart[0] + uart[1] + uart[2] + uart[3] + uart[4] + uart[5] + uart[6] + uart[7];
+        Serial.println(check);
+        Serial.println(uart[8]);
+        if (uart[8] == (check & 0xff)){ /*verify the received data as per protocol*/
+          Serial.println("chksum clr");
+          dist = uart[2] + uart[3] * 256;
+          Serial.println(dist, DEC);
+          if(dist <= 20 && !yStop){
+            Serial.print(1);
+            yStop = !yStop;
+            gameSteppers[1]->stop();
+            gameSteppers[1]->disableOutputs();
+          }
+        }
+      }
+     }
+    
+    gameSteppers[1]->runSpeed();
+
+    // if(!digitalRead(Y_STOP) && !yStop){
+    //   yStop = !yStop;
+    //   Serial.print(1);
+    //   gameSteppers[1]->stop();
+    //   gameSteppers[1]->disableOutputs();
+    // }
   }
   #ifdef DEBUG
   Serial.print("Zero Found\n");
@@ -90,7 +128,7 @@ void calibMotors(){
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(115200);
+  //Serial.begin(115200);
 
   while(!Serial);
 
@@ -142,7 +180,7 @@ void idle(){
   }
   memset(inputBytes, 0, sizeof(inputBytes));
   while(inputBytes[8] != byte(255)){
-    Serial2.readBytes(inputBytes, BYTE_COUNT);
+    Serial.readBytes(inputBytes, BYTE_COUNT);
   }
   return;
 }
@@ -158,24 +196,48 @@ void game_on(){
   #ifdef DEBUG
   Serial.print("game on!\n");
   #endif
-  while(!Serial2);
+  while(!Serial);
   for(AccelStepper *st: gameSteppers){
     st->enableOutputs();
   }
   scanSteppers[0]->enableOutputs();
   bool game_over{false};
   while(!game_over){
+    if(Serial.read() == uint16_t(0x679)){
     Serial.readBytes(inputBytes, BYTE_COUNT);
-    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[0])-1*(inputBytes[0])*inputBytes[1]/255));
-    gameSteppers[1]->setSpeed(3000*(1*(!inputBytes[3])-1*(inputBytes[3])*inputBytes[4]/255));
+    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[0])-1*(inputBytes[0]))*inputBytes[1]/255);
+    gameSteppers[1]->setSpeed(3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
     #ifdef DEBUG
-    sendStuffToSerial(gameSteppers[0]->speed(), gameSteppers[1]->speed());
+
+    sendStuffToSerial(inputBytes[1], inputBytes[4]);
     Serial.print("run!\n");
     #endif
-    for(auto st: gameSteppers){
-      Serial2.write(st->currentPosition());
+    int test;
+    if(positions[0] >= LIMITS::STEP_X || digitalRead(X_STOP)){
+      if(digitalRead(X_STOP)){
+        gameSteppers[0]->setSpeed(0);
+      }else{
+      test = positions[0] + gameSteppers[0]->speed();
+      if(test >LIMITS::STEP_X){
+        gameSteppers[0]->setSpeed(0);
+      }}
+    }
+    if(positions[1] >= LIMITS::STEP_Y || positions[1] <= 0){
+      test = positions[1] + gameSteppers[1]->speed();
+      if(test >LIMITS::STEP_Y || test < 0){
+        gameSteppers[1]->setSpeed(0);
+      }
     }
     coreSteppers.run();
+    int count{0};
+    Serial.write(0x5A);
+    for(auto st: gameSteppers){
+      positions[count] = st->currentPosition();
+      Serial.write(positions[count]);
+      count = !count;
+    }
+    Serial.write(0x5B);}
+    
   }
 }
 
