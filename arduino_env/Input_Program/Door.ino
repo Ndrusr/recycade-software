@@ -1,3 +1,12 @@
+void DoorConfig(){
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+
+  digitalWrite(in1,LOW);
+  digitalWrite(in2,LOW);
+}
+
 void openDoor(int m_speed){
   Serial.print("Motors Moving... Speed:");
   Serial.println(m_speed);

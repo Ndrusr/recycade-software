@@ -1,26 +1,19 @@
-void LoadCellConfig(){
+long LoadCellTare(){
   // tare procedure
+
+  long x0 = 0L;
+  
   Serial.println("Taring...");
   for (int ii=0;ii<int(avg_size);ii++){
     delay(10);
     x0+=hx711.read();
   }
   x0/=long(avg_size);
-  int ii = 1; 
 
-  pinMode(enA, OUTPUT);
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-
-  digitalWrite(in1,LOW);
-  digitalWrite(in2,LOW);
-
-  openDoor(50);
-  delay(1000);
-  closeDoor(40);
+  return x0;
 }
 
-bool mass_reading(){
+bool mass_reading(long x0){
   // averaging reading
   long reading = 0;
   for (int jj=0;jj<int(avg_size);jj++){

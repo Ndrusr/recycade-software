@@ -2,6 +2,7 @@
 #include <TMCStepper.h>         // TMCstepper - https://github.com/teemuatlut/TMCStepper
 #include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
 #include <Streaming.h>          // For serial debugging output - https://www.arduino.cc/reference/en/libraries/streaming/
+#include "Arduino.h"
 
 // Stepper Scanner Pins
 
@@ -28,9 +29,7 @@ bool dir = false;
 const byte hx711_data_pin = 3;
 const byte hx711_clock_pin = 4;
 
-float y1 = 20.0; // calibrated mass to be added
-long x1 = 0L;
-long x0 = 0L;
+long tare = 0L;
 float avg_size = 20.0; // amount of averages for each mass measurement
 
 Q2HX711 hx711(hx711_data_pin, hx711_clock_pin); // prep hx711
@@ -42,19 +41,26 @@ int in1 = 8;
 int in2 = 7;
 int door = 6;
 
+//Serial Parameters
+
+int incomingByte = 0;
+
 //Main Program
 
 void setup() {
 
   Serial.begin(9600); // prepare serial port
   delay(1000); // allow load cell and hx711 to settle
+
+  tare = LoadCellTare();
+  StepperConfig();
+  DoorConfig();
+
+  //Input_State_Machine machine();
 }
 
 void loop() {
-  bool valid_input = mass_reading();
-  Serial.println("Valid Input: "+String(valid_input));
-
-  //Read Serial and wait for pedal press
-
-  
+  if(read_pedal()){
+    openDoor(50);  
+  }
 }

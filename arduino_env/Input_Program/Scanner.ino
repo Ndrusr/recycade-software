@@ -35,4 +35,5 @@ void Scan(){
   
   dir = !dir; // REVERSE DIRECTION
   TMCdriver.shaft(dir); // SET DIRECTION
+
 }
