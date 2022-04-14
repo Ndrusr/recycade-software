@@ -49,6 +49,15 @@ void sendStuffToSerial(T a, T b){
   Serial.print(b);
   Serial.print(")\n");
 }
+template<typename T>
+void sendstuffToSerial(T a[], int len){
+  Serial.print("(");
+  for(int i = 0; i < len; i++){
+    Serial.print(a[i]);
+    Serial.print(", ");
+  }
+  Serial.print(")\n");
+}
 #endif
 void calibMotors(){
   Serial.print("beginning calibration step\n");
@@ -90,16 +99,20 @@ void calibMotors(){
         uart[1] = HEADER;
         //Serial.println("Len clear");
         for (i = 2; i < 9; i++) { /*save data in array*/
-          uart[i] = Serial1.read();
+        uart[i] = Serial1.read();
+        if(uart[i] == -1){
+          i -= 1;
         }
+        }
+        //sendstuffToSerial<int>(uart, 9);
         check = uart[0] + uart[1] + uart[2] + uart[3] + uart[4] + uart[5] + uart[6] + uart[7];
-        Serial.println(check & 0xff);
-        Serial.println(uart[8]);
+        //Serial.println(check & 0xff);
+        //Serial.println(uart[8]);
         if (uart[8] == (check & 0xff)){ /*verify the received data as per protocol*/
-          Serial.println("chksum clr");
+          //Serial.println("chksum clr");
           dist = uart[2] + uart[3] * 256;
-          Serial.println(dist);
-          if(dist <= 20 && !yStop){
+          //Serial.println(dist);
+          if(dist <= 21){
             Serial.print(1);
             yStop = !yStop;
             gameSteppers[1]->stop();
@@ -108,8 +121,9 @@ void calibMotors(){
         }
       }
      }
-    
+    //Serial.println(2);
     gameSteppers[1]->runSpeed();
+    delay(1);
 
     // if(!digitalRead(Y_STOP) && !yStop){
     //   yStop = !yStop;
