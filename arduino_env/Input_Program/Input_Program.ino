@@ -1,5 +1,6 @@
 #include <Q2HX711.h>
 #include <TMCStepper.h>         // TMCstepper - https://github.com/teemuatlut/TMCStepper
+#include <SpeedyStepper.h>
 #include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
 #include <Streaming.h>          // For serial debugging output - https://www.arduino.cc/reference/en/libraries/streaming/
 #include "Arduino.h"
@@ -18,6 +19,8 @@
 SoftwareSerial SoftSerial(SW_RX, SW_TX);                          // Be sure to connect RX to TX and TX to RX between both devices
 
 TMC2209Stepper TMCdriver(&SoftSerial, R_SENSE, DRIVER_ADDRESS);   // Create TMC driver
+
+SpeedyStepper stepper;
 
 int accel;
 long maxSpeed;
@@ -63,4 +66,5 @@ void loop() {
   if(read_pedal()){
     openDoor(50);  
   }
+  Scan();
 }
