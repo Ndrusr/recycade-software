@@ -41,8 +41,8 @@ int32_t positions[2]{0,0};
 
 
 #ifdef DEBUG
-template<typename T>
-void sendStuffToSerial(T a, T b){
+template<typename R>
+void sendStuffToSerial(R a, R b){
   Serial.print("(");
   Serial.print(a);
   Serial.print(", ");
@@ -90,7 +90,7 @@ void calibMotors(){
   Serial1.begin(115200);
   while(!(Serial1.available() > 0));
   Serial.println("Beginning y move");
-  
+  digitalWrite(Y_STOP, HIGH);
   while(!yStop){
     if(Serial1.read() == HEADER) { /*assess data package frame header 0x59*/
       uart[0]=HEADER;
@@ -132,6 +132,7 @@ void calibMotors(){
     //   gameSteppers[1]->disableOutputs();
     // }
   }
+  digitalWrite(Y_STOP, LOW);
   #ifdef DEBUG
   Serial.print("Zero Found\n");
   #endif
@@ -154,6 +155,8 @@ void setup() {
   Serial.print("Steppers Init\n");
 
   int activationPins[4] = {X_ENABLE_PIN, Y_ENABLE_PIN, SLIDER_ENABLE_PIN, SCAN_ENABLE_PIN};
+
+  pinMode(Y_STOP, OUTPUT);
 
   int count = 0;
 

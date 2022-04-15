@@ -34,7 +34,7 @@
 
 // Endstop Pins
 #define X_STOP              3
-#define Y_STOP             14
+#define Y_STOP              7
 
 //ByteBuffer
 
