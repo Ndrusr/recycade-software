@@ -48,6 +48,11 @@ int door = 6;
 
 int incomingByte = 0;
 
+//IR Ring
+
+int IR_1 = A0;
+float IR_1_Readings[10];
+
 //Main Program
 
 void setup() {

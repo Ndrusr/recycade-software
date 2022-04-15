@@ -20,7 +20,7 @@ void StepperConfig(){
   stepper.setStepsPerMillimeter(50);     //2*200/8
   stepper.setCurrentPositionInMillimeters(0);     //Set Zero Position
   stepper.setSpeedInMillimetersPerSecond(5);
-  stepper.setAccelerationInMillimetersPerSecondPerSecond(1);
+  stepper.setAccelerationInMillimetersPerSecondPerSecond(5);
 
   /*stepper.setCurrentPositionInSteps(0);
   stepper.setSpeedInStepsPerSecond(50);
@@ -29,6 +29,7 @@ void StepperConfig(){
 
 void Scan(){
   Serial.println("Scanning...");
+  
   /*accel = 1000;                                         // Speed increase/decrease amount
   maxSpeed = 50000;                                      // Maximum speed to be reached
   speedChangeDelay = 100;                                // Delay between speed changes
@@ -48,12 +49,26 @@ void Scan(){
     Serial << TMCdriver.VACTUAL() << endl;
     delay(100);
   }*/
-
-  stepper.moveToPositionInMillimeters(40);
-  delay(1000);
+  for(int ii=0;ii<10;ii+=1){
+    stepper.moveToPositionInMillimeters(ii*5);
+    IR_1_Readings[ii]=readIR();
+    Serial.println(IR_1_Readings[ii]);
+  }
+  
 
   stepper.moveToPositionInSteps(0);
   delay(1000);
   
 
+}
+
+float readIR(){
+  int sum_readings = 0;
+  for(int jj=0;jj<avg_size;jj+=1){
+    sum_readings+=analogRead(IR_1);
+    delay(10);
+  }i
+  
+
+  return sum_readings/avg_size;
 }
