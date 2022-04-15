@@ -61,7 +61,7 @@ void sendstuffToSerial(T a[], int len){
 #endif
 void calibMotors(){
   Serial.print("beginning calibration step\n");
-  long target[2]{-100000, -100000};
+  long target[2]{-100000, 100000};
   coreSteppers.moveTo(target);
   #ifdef DEBUG
   sendStuffToSerial<float>(gameSteppers[0]->targetPosition(), gameSteppers[1]->targetPosition());
@@ -112,7 +112,7 @@ void calibMotors(){
           //Serial.println("chksum clr");
           dist = uart[2] + uart[3] * 256;
           //Serial.println(dist);
-          if(dist <= 21){
+          if(dist <= 4){
             Serial.print(1);
             yStop = !yStop;
             gameSteppers[1]->stop();
@@ -215,6 +215,13 @@ void game_on(){
     st->enableOutputs();
   }
   scanSteppers[0]->enableOutputs();
+  long target[2]{0, -StepPosY(60)};
+  coreSteppers.moveTo(target);
+  gameSteppers[1]->setSpeed(-500);
+  while(gameSteppers[1]->distanceToGo() != 0){
+    gameSteppers[1]->runSpeed();
+  }
+
   bool game_over{false};
   while(!game_over){
     if(Serial.read() == uint16_t(0x679)){
@@ -236,9 +243,9 @@ void game_on(){
         gameSteppers[0]->setSpeed(0);
       }}
     }
-    if(positions[1] >= LIMITS::STEP_Y || positions[1] <= 0){
+    if(positions[1] <= -LIMITS::STEP_Y || positions[1] >= 0){
       test = positions[1] + gameSteppers[1]->speed();
-      if(test >LIMITS::STEP_Y || test < 0){
+      if(test < LIMITS::STEP_Y || test > 0){
         gameSteppers[1]->setSpeed(0);
       }
     }

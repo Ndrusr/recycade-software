@@ -16,6 +16,8 @@
 #define INPUT_DIR A0
 #define STEP_PEDAL 6
 
+#define HEADER 0x5A
+
 const static float rampAngle = 15;
     enum STPMM{
         X = 10,
@@ -34,26 +36,20 @@ const static float rampAngle = 15;
 
 volatile bool detected;
 
-byte writeBytesBuffer[8] {0,0,0,0,0,0,0,0};
-byte writeBytes[8] {0,0,0,0,0,0,0,0};   
+byte writeBytesBuffer[8] {HEADER,0,0,0,0,0,0,0x0A};
+byte writeBytes[8] {HEADER,0,0,0,0,0,0,0x0A};   
+
+byte readBytes[8];
 
 void tellMega(){
-    Serial.write(0x679);
-    for(byte byte: writeBytes){
-        Serial.write(byte);
-    }
-    Serial.write('\n');
-    
+    while(Serial.availableForWrite() >= 8);
+    Serial.write(writeBytes, sizeof(writeBytes));
 }
-#ifndef DIAGNOSTIC
+
 #define POTMIN 484
 #define POTMAX 508
 #define POTAVG 496
-#else
-#define POTMIN 0
-#define POTMAX 1023
-#define POTAVG 511.5
-#endif
+
 
 const double milliG = -320.5128;
 const double stepG = milliG*STPMM::Y;

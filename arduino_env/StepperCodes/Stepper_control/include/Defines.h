@@ -49,6 +49,13 @@
     };
 
 volatile bool detected;
+namespace STPMM{
+    enum STPMM{
+        X = 10,
+        Y = 20
+    };
+}
+#define StepPosY(mmPos)(mmPos*STPMM::Y)
 
 int dist;
 int i;
