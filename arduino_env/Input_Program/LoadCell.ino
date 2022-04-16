@@ -22,7 +22,7 @@ bool mass_reading(long x0){
   reading/=long(avg_size);
   reading -= x0;
   Serial.println(reading);
-  if (reading < -20000 && reading > -45000){
+  if (reading < -20000 && reading > -50000){
     return true;
   }else{
     return false;

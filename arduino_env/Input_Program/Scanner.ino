@@ -19,12 +19,14 @@ void StepperConfig(){
 
   stepper.setStepsPerMillimeter(50);     //2*200/8
   stepper.setCurrentPositionInMillimeters(0);     //Set Zero Position
-  stepper.setSpeedInMillimetersPerSecond(5);
-  stepper.setAccelerationInMillimetersPerSecondPerSecond(5);
+  stepper.setSpeedInMillimetersPerSecond(maxSpeed);
+  stepper.setAccelerationInMillimetersPerSecondPerSecond(accel);
 
   /*stepper.setCurrentPositionInSteps(0);
   stepper.setSpeedInStepsPerSecond(50);
   stepper.setAccelerationInStepsPerSecondPerSecond(10);*/
+
+  stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
 }
 
 void Scan(){
@@ -49,15 +51,14 @@ void Scan(){
     Serial << TMCdriver.VACTUAL() << endl;
     delay(100);
   }*/
-  for(int ii=0;ii<10;ii+=1){
-    stepper.moveToPositionInMillimeters(ii*5);
+  for(int ii=0;ii<150;ii+=150/samples){
+    stepper.moveToPositionInMillimeters(ii);
     IR_1_Readings[ii]=readIR();
     Serial.println(IR_1_Readings[ii]);
   }
   
 
-  stepper.moveToPositionInSteps(0);
-  delay(1000);
+  stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
   
 
 }
@@ -67,8 +68,19 @@ float readIR(){
   for(int jj=0;jj<avg_size;jj+=1){
     sum_readings+=analogRead(IR_1);
     delay(10);
-  }i
-  
+  }
 
   return sum_readings/avg_size;
+}
+
+float sum_of_errors(float IR_readings[]){
+
+  static float r[10];
+  float sum_of_e = 0;
+
+  for(int kk = 0;kk<10;kk++){
+    sum_of_e += (IR_readings[kk]-bottleModel[0][kk])*(IR_readings[kk]-bottleModel[0][kk]);
+  }
+
+  return sum_of_e;
 }

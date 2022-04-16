@@ -21,7 +21,7 @@ void openDoor(int m_speed){
 void closeDoor(int m_speed){
   analogWrite(enA, m_speed);
   Serial.println("Door Closing...");
-  while(digitalRead(door)){
+  while(digitalRead(door_switch)){
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);
   }
