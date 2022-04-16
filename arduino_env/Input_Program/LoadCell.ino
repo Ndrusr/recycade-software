@@ -32,7 +32,7 @@ bool mass_reading(long x0){
   }
 }
 
-void release(){
+void dispense(){
   lc_servo.write(180);
   delay(1000);
   lc_servo.write(0);

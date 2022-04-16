@@ -11,7 +11,7 @@ void StepperConfig(){
   
   TMCdriver.begin();                                                                                                                                                                                                                                                                                                                            // UART: Init SW UART (if selected) with default 115200 baudrate
   TMCdriver.toff(5);                 // Enables driver in software
-  TMCdriver.rms_current(600);        // Set motor RMS current
+  TMCdriver.rms_current(700);        // Set motor RMS current
   TMCdriver.microsteps(2);         // Set microsteps to 1/2
 
   TMCdriver.en_spreadCycle(false);
@@ -51,8 +51,8 @@ bool Scan(){
     Serial << TMCdriver.VACTUAL() << endl;
     delay(100);
   }*/
-  for(int ii=0;ii<150;ii+=150/samples){
-    stepper.moveToPositionInMillimeters(ii);
+  for(int ii=0;ii<samples;ii++){
+    stepper.moveToPositionInMillimeters(ii*150/samples);
     IR_1_Readings[ii]=readIR();
     Serial.println(IR_1_Readings[ii]);
   }
@@ -61,7 +61,7 @@ bool Scan(){
   //stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
   float bottle_sum_e = sum_of_errors(IR_1_Readings);
   Serial.println(bottle_sum_e);
-  return bottle_sum_e<100.0;
+  return bottle_sum_e<50000.0;
 
 }
 

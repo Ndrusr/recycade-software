@@ -24,7 +24,7 @@ TMC2209Stepper TMCdriver(&SoftSerial, R_SENSE, DRIVER_ADDRESS);   // Create TMC 
 SpeedyStepper stepper;
 
 int accel = 5;
-long maxSpeed = 5;
+long maxSpeed = 20;
 int speedChangeDelay;
 bool dir = false;
 
@@ -93,8 +93,11 @@ void loop() {
 
     while(!mass_reading(tare)){}
 
-    closeDoor(40);
+    closeDoor(50);
   
-    Scan();
+    if(Scan()){
+      Serial.println("Input Verified: Bottle");
+      dispense();
+    }
   }
 }
