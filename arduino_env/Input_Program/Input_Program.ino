@@ -4,6 +4,7 @@
 #include <SoftwareSerial.h>     // Software serial for the UART to TMC2209 - https://www.arduino.cc/en/Reference/softwareSerial
 #include <Streaming.h>          // For serial debugging output - https://www.arduino.cc/reference/en/libraries/streaming/
 #include "Arduino.h"
+#include <Servo.h>
 
 // Stepper Scanner Pins
 
@@ -59,9 +60,14 @@ int incomingByte = 0;
 const int samples = 10;
 float IR_1_Readings[samples];
 float IR_2_Readings[samples];
+
 float IR_3_Readings[samples];
-float bottleModel[3][samples];
-float canModel[3][samples];
+float bottleModel[samples];
+float canModel[samples];
+
+//Load Cell Servo
+
+Servo lc_servo;
 
 //Main Program
 
@@ -74,17 +80,21 @@ void setup() {
 
   StepperConfig();
   DoorConfig();
-
+  for(int i=0;i<samples;i++){
+    bottleModel[i]=30;
+    canModel[i]=30;
+  }
   //Input_State_Machine machine();*/
 }
 
 void loop() {
   if(read_pedal()){
     openDoor(50);  
-  }
-  Serial.println(analogRead(A3));
-  //Scan();
 
-  //Serial.println(mass_reading());
-  //Serial.println(mass_reading(tare));
+    while(!mass_reading(tare)){}
+
+    closeDoor(40);
+  
+    Scan();
+  }
 }

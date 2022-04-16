@@ -10,6 +10,9 @@ long LoadCellTare(){
   }
   x0/=long(avg_size);
 
+  lc_servo.attach(dispense_pin);
+  lc_servo.write(0);
+
   return x0;
 }
 
@@ -27,4 +30,10 @@ bool mass_reading(long x0){
   }else{
     return false;
   }
+}
+
+void release(){
+  lc_servo.write(180);
+  delay(1000);
+  lc_servo.write(0);
 }

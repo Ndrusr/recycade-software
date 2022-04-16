@@ -29,7 +29,7 @@ void StepperConfig(){
   stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
 }
 
-void Scan(){
+bool Scan(){
   Serial.println("Scanning...");
   
   /*accel = 1000;                                         // Speed increase/decrease amount
@@ -57,9 +57,11 @@ void Scan(){
     Serial.println(IR_1_Readings[ii]);
   }
   
-
-  stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
   
+  //stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
+  float bottle_sum_e = sum_of_errors(IR_1_Readings);
+  Serial.println(bottle_sum_e);
+  return bottle_sum_e<100.0;
 
 }
 
@@ -79,7 +81,7 @@ float sum_of_errors(float IR_readings[]){
   float sum_of_e = 0;
 
   for(int kk = 0;kk<10;kk++){
-    sum_of_e += (IR_readings[kk]-bottleModel[0][kk])*(IR_readings[kk]-bottleModel[0][kk]);
+    sum_of_e += (IR_readings[kk]-bottleModel[kk])*(IR_readings[kk]-bottleModel[kk]);
   }
 
   return sum_of_e;
