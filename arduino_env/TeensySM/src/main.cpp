@@ -1,6 +1,6 @@
 //#define MULT_LVL
-
-//#define DEBUG
+//#define LAPTOP_MANUAL
+#define DEBUG
 //#define DIAGNOSTIC
 //#define SERIAL_DEBUG
 //#define JUMP_DEBUG
@@ -48,9 +48,13 @@ Ramp *ramps[3]{new Ramp(0,0,0), new Ramp(0,0,1), new Ramp(0,0,0)};
 bool acptMsg;
 
 void idle(){
+  #ifdef LAPTOP_MANUAL
+    Serial.println("idle");
+  #endif
   while(!digitalRead(STEP_PEDAL));
   writeBytes[1] = (byte)'A';
   tellMega();
+  Serial.println("idle terminate");
 }
 
 /*
@@ -94,8 +98,8 @@ void convertPotToSPEED(){
   }
   #ifndef DIAGNOSTIC
   #ifdef DEBUG
-  Serial.println("Run");
-  Serial.println(speed);
+  //Serial.println("Run");
+  //Serial.println(speed);
   #endif
   if (speed < 0){
     writeBytesBuffer[1] = byte(1);
@@ -105,8 +109,8 @@ void convertPotToSPEED(){
   writeBytesBuffer[2] = static_cast<byte>(abs(speed));
   int threadSt = threads.getState(threadID[1]);
   #ifdef DEBUG
-  Serial.print("ThreadState: ");
-  Serial.println(threadSt);
+  // Serial.print("ThreadState: ");
+  // Serial.println(threadSt);
   #endif
   if(digitalRead(STEP_PEDAL) && !depressed){
     
@@ -122,7 +126,7 @@ void convertPotToSPEED(){
       }
       #ifdef DEBUG 
       else{
-        Serial.println("not starting new thread!");
+        //Serial.println("not starting new thread!");
       } 
       #endif
     #else
@@ -183,6 +187,9 @@ void scanning(){
 
 
 void game(){
+  #ifdef DEBUG
+  Serial.println("GAME ON");
+  #endif
   while(!(Serial));
   // for(auto st: gameSteppers){
   //   st.enableOutputs();
@@ -198,7 +205,7 @@ void game(){
     // coreSteppers.run();
     if (update_clock > 25){
       
-      tellMega();
+      //tellMega();
 
       #ifdef SERIAL_DEBUG
       Serial.println(writeBytes[1]);
@@ -263,13 +270,18 @@ void setup() {
   //Serial2.begin(115200);
   while(!Serial);
   pinMode(INPUT_DIR, INPUT);
+  pinMode(STEP_PEDAL, INPUT);
   debug = true;
+  
   Serial.println("Setup cleared");
 }
 
 void loop() {
   //debugMotors();
+  
   acptMsg = false;
+  
+  #ifndef LAPTOP_MANUAL
   while(Serial.available() < 8 );
   if(Serial.read() == HEADER){
     readBytes[0] = HEADER;
@@ -283,20 +295,45 @@ void loop() {
       acptMsg = true;
     }
   }
+  #else
+  #ifdef DEBUG
+  Serial.println("Awaiting input");
+  #endif
+  while(Serial.available() < 1);
+  #ifdef DEBUG
+  Serial.println("Input get");
+  #endif
+  if(Serial.read() == '2'){
+    readBytes[1] = 0x42;
+    acptMsg = true;
+  }
+  #endif
+
   if(acptMsg){
     switch (readBytes[1])
     {
     case 0x42:
+      readBytes[1] = 0x0;
       idle();
+      Serial.write(readBytes, 8);
+      break;
     
     case 0x41:
+      readBytes[1] = 0x0;
       scanning();
+      break;
 
     case 0x43:
+      readBytes[1] = 0x0;
       game();
+      break;
+    
+    case 0x44:
+      break;
 
     default:
       idle();
+      break;
     }
   }
   

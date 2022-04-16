@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define DEBUG
+//#define LAPTOP_MANUAL
 
 /*
   X - STEPPER
@@ -35,9 +36,11 @@ MultiStepper coreSteppers;
 AccelStepper *allSteppers[4];
 
 byte inputBytes[BYTE_COUNT];
+#ifdef LAPTOP_MANUAL
 char USBBytes[BYTE_COUNT_USB];
+#endif
 
-int32_t positions[2]{0,0};
+int16_t positions[2]{0,0};
 
 
 #ifdef DEBUG
@@ -196,8 +199,14 @@ void idle(){
     st->disableOutputs();
   }
   memset(inputBytes, 0, sizeof(inputBytes));
-  while(inputBytes[8] != byte(255)){
+  bool idle {true};
+  while(idle){
     Serial.readBytes(inputBytes, BYTE_COUNT);
+    if(inputBytes[0] == 0x5A){
+      if(inputBytes[1] == 0x44){
+        idle = !idle;
+      }
+    }
   }
   return;
 }
@@ -206,7 +215,14 @@ void scanning(){
   for(AccelStepper *st: scanSteppers){
     st->enableOutputs();
   }
-
+  while(true){
+    Serial.readBytes(inputBytes, BYTE_COUNT);
+    if(inputBytes[0] == 0x5A){
+      if(inputBytes[1] == 0x44){
+        return;
+      }
+    }
+  }
 }
 
 void game_on(){
@@ -226,10 +242,22 @@ void game_on(){
   }
 
   bool game_over{false};
+  int count{0};
+  uint16_t absValue;
   while(!game_over){
-    if(Serial.read() == uint16_t(0x679)){
+
+    for(count = 0; count < 2; count++){
+      positions[count] = gameSteppers[count]->currentPosition();
+      sendBytes[1 + count*3] = (positions[count] < 0);
+      absValue = abs(positions[count]);
+      conv16To8(absValue, sendBytes[2 + 3*count], sendBytes[3 + 3*count]);
+    }
+    Serial.write(sendBytes, 8);
+    while(Serial.available() < 8);
     Serial.readBytes(inputBytes, BYTE_COUNT);
-    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[0])-1*(inputBytes[0]))*inputBytes[1]/255);
+    if(inputBytes[0] == uint8_t(0x5A)){
+    
+    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[1])-1*(inputBytes[1]))*inputBytes[2]/255);
     gameSteppers[1]->setSpeed(3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
     #ifdef DEBUG
 
@@ -253,14 +281,11 @@ void game_on(){
       }
     }
     coreSteppers.run();
-    int count{0};
-    Serial.write(0x5A);
-    for(auto st: gameSteppers){
-      positions[count] = st->currentPosition();
-      Serial.write(positions[count]);
-      count = !count;
+    
+    
+    
+    
     }
-    Serial.write(0x5B);}
     
   }
 }
@@ -272,18 +297,44 @@ void PANIC(){
 
 void loop() {
   Serial.setTimeout(10000);
+  #ifdef LAPTOP_MANUAL
   USBBytes[0] = '9';
   Serial.readBytes(USBBytes, BYTE_COUNT_USB);
   switch(USBBytes[0]){
     case('0'):
       idle();
+      break;
     case('1'):
       scanning();
+      break;
     case('2'):
       game_on();
+      break;
     case('9'):
       PANIC();
   }
+  #else
+  while(Serial.available() < 8);
+  Serial.readBytes(inputBytes, 8);
+  if(inputBytes[0] == 0x5A){
+    switch(inputBytes[1]){
+      case 0x42:
+        idle();
+        break;
+      case 0x41:
+        scanning();
+        break;
+      case 0x43:
+        game_on();
+        break;
+      case 0x44:
+        break;
+      default:
+        PANIC();
+    }
+  }
+  
+  #endif
   for(AccelStepper *st: allSteppers){
     st->disableOutputs();
   }

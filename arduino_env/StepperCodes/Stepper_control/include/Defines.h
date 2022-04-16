@@ -56,9 +56,15 @@ namespace STPMM{
     };
 }
 #define StepPosY(mmPos)(mmPos*STPMM::Y)
+#define StepPosX(mmPos)(mmPos*STPMM::X)
 
 int dist;
 int i;
 int uart[9];
 const int HEADER=0x59;
 int check;
+byte sendBytes[8]{0x5A, 0, 0 ,0 ,0 ,0 ,0 ,0x0A};
+void conv16To8(uint16_t input, uint8_t &out1, uint8_t &out2){
+    out1 = (input >> 8) & 0xFF;
+    out2 = (input >> 0) & 0xFF;
+}

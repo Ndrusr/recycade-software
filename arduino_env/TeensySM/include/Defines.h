@@ -42,13 +42,14 @@ byte writeBytes[8] {HEADER,0,0,0,0,0,0,0x0A};
 byte readBytes[8];
 
 void tellMega(){
-    while(Serial.availableForWrite() >= 8);
+    while(Serial.availableForWrite() < 8);
     Serial.write(writeBytes, sizeof(writeBytes));
+    return;
 }
 
-#define POTMIN 484
-#define POTMAX 508
-#define POTAVG 496
+#define POTMIN 520
+#define POTMAX 540
+#define POTAVG 530
 
 
 const double milliG = -320.5128;
