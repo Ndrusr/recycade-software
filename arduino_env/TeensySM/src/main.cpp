@@ -1,4 +1,4 @@
-//#define MULT_LVL
+#define MULT_LVL
 //#define LAPTOP_MANUAL
 #define DEBUG
 //#define DIAGNOSTIC
@@ -33,7 +33,7 @@
 // #include<MultiStepper.h>
 
 
-bool debug{false};
+bool update{false};
 
 int threadID[2]{0,66535};
 
@@ -43,7 +43,7 @@ float speed;
 
 bool depressed = false;
 
-Ramp *ramps[3]{new Ramp(0,0,0), new Ramp(0,0,1), new Ramp(0,0,0)};
+byte* pointerToInput;
 
 bool acptMsg;
 
@@ -68,12 +68,12 @@ void jump(){
   float v = 3000;
   int elapsedTime = 0;
   elapsedMillis calculateStep = 0;
+  pointerToInput = readBytes;
 
-
-  while (elapsedTime < 1435){
+  while (!(*(pointerToInput + 5))){
     
     writeBytes[3] = (v < 0);
-    writeBytes[4] =  static_cast<int>(abs(v)/3000);
+    writeBytes[4] =  static_cast<uint8_t>(abs(v)/3000);
     if (calculateStep > 50){
       elapsedTime += calculateStep;
       v += stepG*calculateStep*0.001;
@@ -114,7 +114,6 @@ void convertPotToSPEED(){
   #endif
   if(digitalRead(STEP_PEDAL) && !depressed){
     
-    #ifndef MULT_LVL
       #ifdef DEBUG
       //Serial.print("Jump triggered.\n");
       #endif
@@ -129,9 +128,7 @@ void convertPotToSPEED(){
         //Serial.println("not starting new thread!");
       } 
       #endif
-    #else
-      
-    #endif
+    
   }else if(!digitalRead(STEP_PEDAL) && depressed){
     depressed = false;
   } 
@@ -145,7 +142,33 @@ void convertPotToSPEED(){
       }
       
     #else
-      
+      if(threadSt != threads.RUNNING){
+        switch (readBytes[6])
+        {
+        case 0:
+          writeBytesBuffer[3] = 0;
+          writeBytesBuffer[4] = 0;
+          break;
+        
+        case 1:
+        writeBytesBuffer[3] = writeBytes[1];
+        writeBytesBuffer[4] = static_cast<uint8_t>(writeBytes[2]*tan(radians(rampAngle)));
+        break;
+
+        case 2:
+        writeBytesBuffer[3] = -writeBytes[1];
+        writeBytesBuffer[4] = static_cast<uint8_t>(writeBytes[2]*tan(radians(rampAngle)));
+        break;
+
+        case 3:
+        writeBytesBuffer[3] = 0;
+        writeBytesBuffer[4] = 0;
+        break;
+
+        default:
+          break;
+        }
+      }
     #endif
   }
   #else
@@ -173,6 +196,7 @@ void convertPotToSPEED(){
       writeBytes[i] = writeBytesBuffer[i];
     }
     inputRun = 0;
+    update = true;
   }
   }
 
@@ -201,11 +225,25 @@ void game(){
   elapsedMillis update_clock = 0;
   while(!game_over){
     //bool count = 0;
-    
+    while(Serial.available() < 8);
+    readBytes[0] = Serial.read();
+    if(readBytes[0] == 0x5A){
+      if(Serial.read() == 0x44){
+        game_over = true;
+        return;
+      }
+    }else if(readBytes[0] == 0x5B){
+      for(int i = 1; i < 8; i++){
+        readBytes[i] = Serial.read();
+      }
+    }
+
     // coreSteppers.run();
     if (update_clock > 25){
-      
-      //tellMega();
+      if(update){
+      tellMega();
+      update = false;
+      }
 
       #ifdef SERIAL_DEBUG
       Serial.println(writeBytes[1]);
@@ -227,7 +265,7 @@ void game(){
     // }
   
   }
-  Serial.print("Game Over!");
+  //Serial.print("Game Over!");
   for(auto thread: threadID){
     if(threads.getState(thread) == threads.RUNNING){
     threads.kill(thread);}
@@ -271,7 +309,6 @@ void setup() {
   while(!Serial);
   pinMode(INPUT_DIR, INPUT);
   pinMode(STEP_PEDAL, INPUT);
-  debug = true;
   
   Serial.println("Setup cleared");
 }

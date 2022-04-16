@@ -248,17 +248,17 @@ void game_on(){
 
     for(count = 0; count < 2; count++){
       positions[count] = gameSteppers[count]->currentPosition();
-      sendBytes[1 + count*3] = (positions[count] < 0);
       absValue = abs(positions[count]);
-      conv16To8(absValue, sendBytes[2 + 3*count], sendBytes[3 + 3*count]);
+      conv16To8(absValue, sendGameBytes[1 + 2*count], sendGameBytes[2 + 2*count]);
     }
     Serial.write(sendBytes, 8);
     while(Serial.available() < 8);
     Serial.readBytes(inputBytes, BYTE_COUNT);
-    if(inputBytes[0] == uint8_t(0x5A)){
+    if(inputBytes[0] == uint8_t(0x5B)){
+    
     
     gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[1])-1*(inputBytes[1]))*inputBytes[2]/255);
-    gameSteppers[1]->setSpeed(3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
+    gameSteppers[1]->setSpeed(-3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
     #ifdef DEBUG
 
     sendStuffToSerial(inputBytes[1], inputBytes[4]);
@@ -282,12 +282,20 @@ void game_on(){
     }
     coreSteppers.run();
     
-    
-    
-    
+    }else if(inputBytes[0] == 0x5A){
+      game_over = true;
+
     }
     
   }
+  for(long i : target){
+    i = 0;
+  } 
+  coreSteppers.moveTo(target);
+  gameSteppers[1]->runToPosition();
+  gameSteppers[0]->runToPosition();
+  sendBytes[1] = 0x45;
+  Serial.write(sendBytes, 8);
 }
 
 void PANIC(){
