@@ -63,7 +63,7 @@ void sendstuffToSerial(T a[], int len){
 }
 #endif
 void calibMotors(){
-  Serial.print("beginning calibration step\n");
+  //Serial.print("beginning calibration step\n");
   long target[2]{-100000, 100000};
   coreSteppers.moveTo(target);
   #ifdef DEBUG
@@ -93,7 +93,7 @@ void calibMotors(){
   Serial1.begin(115200);
   while(!(Serial1.available() > 0));
   Serial.println("Beginning y move");
-  digitalWrite(Y_STOP, HIGH);
+  //digitalWrite(Y_STOP, HIGH);
   while(!yStop){
     if(Serial1.read() == HEADER) { /*assess data package frame header 0x59*/
       uart[0]=HEADER;
@@ -288,8 +288,8 @@ void game_on(){
     }
     
   }
-  for(long i : target){
-    i = 0;
+  for(int i = 0; i<2; i++){
+    target[i] = 0;
   } 
   coreSteppers.moveTo(target);
   gameSteppers[1]->runToPosition();
@@ -299,8 +299,10 @@ void game_on(){
 }
 
 void PANIC(){
-  Serial.print("KHAAAAAAAAAN!");
-  Serial.print(" Something has gone wrong - Serial has not responded for at least 10s!\n");
+  //Serial.print("KHAAAAAAAAAN!");
+  //Serial.print(" Something has gone wrong - Serial has not responded for at least 10s!\n");
+  sendBytes[1] = 0x44;
+  Serial.write(sendBytes, 8);
 }
 
 void loop() {

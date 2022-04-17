@@ -1,6 +1,6 @@
 #define MULT_LVL
 //#define LAPTOP_MANUAL
-#define DEBUG
+//#define DEBUG
 //#define DIAGNOSTIC
 //#define SERIAL_DEBUG
 //#define JUMP_DEBUG
@@ -350,18 +350,18 @@ void loop() {
     switch (readBytes[1])
     {
     case 0x42:
-      readBytes[1] = 0x0;
+      
       idle();
       Serial.write(readBytes, 8);
       break;
     
     case 0x41:
-      readBytes[1] = 0x0;
+      
       scanning();
       break;
 
     case 0x43:
-      readBytes[1] = 0x0;
+      
       game();
       break;
     
