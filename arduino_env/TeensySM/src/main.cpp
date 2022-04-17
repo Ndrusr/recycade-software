@@ -309,7 +309,7 @@ void setup() {
   while(!Serial);
   pinMode(INPUT_DIR, INPUT);
   pinMode(STEP_PEDAL, INPUT);
-  
+  pinMode(13, OUTPUT);
   Serial.println("Setup cleared");
 }
 
@@ -350,19 +350,22 @@ void loop() {
     switch (readBytes[1])
     {
     case 0x42:
-      
+      digitalWrite(13, HIGH);
       idle();
       Serial.write(readBytes, 8);
+      digitalWrite(13, LOW);
       break;
     
     case 0x41:
-      
+      digitalWrite(13, HIGH);
       scanning();
+      digitalWrite(13, LOW);
       break;
 
     case 0x43:
-      
+      digitalWrite(13, HIGH);
       game();
+      digitalWrite(13, LOW);
       break;
     
     case 0x44:
