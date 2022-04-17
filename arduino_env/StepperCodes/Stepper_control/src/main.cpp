@@ -4,7 +4,7 @@
 #include <MultiStepper.h>
 #include <stdio.h>
 
-#define DEBUG
+//#define DEBUG
 //#define LAPTOP_MANUAL
 
 /*
@@ -248,39 +248,39 @@ void game_on(){
 
     for(count = 0; count < 2; count++){
       positions[count] = gameSteppers[count]->currentPosition();
-      absValue = abs(positions[count]);
+      absValue = (uint16_t)positions[count];
       conv16To8(absValue, sendGameBytes[1 + 2*count], sendGameBytes[2 + 2*count]);
     }
     Serial.write(sendBytes, 8);
     while(Serial.available() < 8);
     Serial.readBytes(inputBytes, BYTE_COUNT);
     if(inputBytes[0] == uint8_t(0x5B)){
-    
-    
-    gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[1])-1*(inputBytes[1]))*inputBytes[2]/255);
-    gameSteppers[1]->setSpeed(-3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
-    #ifdef DEBUG
+      gameSteppers[0]->setSpeed(1500*(1*(!inputBytes[1])-1*(inputBytes[1]))*inputBytes[2]/255);
+      gameSteppers[1]->setSpeed(-3000*(1*(!inputBytes[3])-1*(inputBytes[3]))*inputBytes[4]/255);
+      #ifdef DEBUG
 
-    sendStuffToSerial(inputBytes[1], inputBytes[4]);
-    Serial.print("run!\n");
-    #endif
-    int test;
-    if(positions[0] >= LIMITS::STEP_X || digitalRead(X_STOP)){
-      if(digitalRead(X_STOP)){
-        gameSteppers[0]->setSpeed(0);
-      }else{
-      test = positions[0] + gameSteppers[0]->speed();
-      if(test >LIMITS::STEP_X){
-        gameSteppers[0]->setSpeed(0);
-      }}
-    }
-    if(positions[1] <= -LIMITS::STEP_Y || positions[1] >= 0){
-      test = positions[1] + gameSteppers[1]->speed();
-      if(test < LIMITS::STEP_Y || test > 0){
-        gameSteppers[1]->setSpeed(0);
+      sendStuffToSerial(inputBytes[1], inputBytes[4]);
+      Serial.print("run!\n");
+      #endif
+      int test;
+      if(positions[0] >= LIMITS::STEP_X || digitalRead(X_STOP)){
+        if(digitalRead(X_STOP)){
+          gameSteppers[0]->setSpeed(0);
+        }else{
+        test = positions[0] + gameSteppers[0]->speed();
+          if(test >LIMITS::STEP_X){
+            gameSteppers[0]->setSpeed(0);
+          }
+        }
       }
-    }
-    coreSteppers.run();
+      if(positions[1] <= -LIMITS::STEP_Y || positions[1] >= 0){
+        test = positions[1] + gameSteppers[1]->speed();
+        if(test < LIMITS::STEP_Y || test > 0){
+          gameSteppers[1]->setSpeed(0);
+        }
+      } //soft stops
+
+      coreSteppers.run();
     
     }else if(inputBytes[0] == 0x5A){
       game_over = true;
@@ -336,6 +336,8 @@ void loop() {
         game_on();
         break;
       case 0x44:
+        break;
+      case 0x45:
         break;
       default:
         PANIC();
