@@ -319,7 +319,12 @@ void loop() {
   acptMsg = false;
   
   #ifndef LAPTOP_MANUAL
-  while(Serial.available() < 8 );
+  while(Serial.available() < 8 ){
+    digitalWrite(13, HIGH);
+    delay(500);
+    digitalWrite(13, LOW);
+    delay(500);
+  };
   if(Serial.read() == HEADER){
     readBytes[0] = HEADER;
     for (int i = 0; i < 8; i++){
