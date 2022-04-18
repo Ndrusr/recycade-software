@@ -3,8 +3,6 @@ import serial
 serUNO = serial.Serial('/dev/ttyUSB1', 9600)
 serMega = serial.Serial('/dev/ttyUSB0', 9600)
 
-
-
 actionmsg = "ZA00000\n"
 pushmsg = "ZB00000\n"
 acceptmsg = "Zaccept"
@@ -32,7 +30,8 @@ while(True):
                 else:
                     print('rejected')
                     break
-        
+    else:
+        print(megaRead)
 
 
 
