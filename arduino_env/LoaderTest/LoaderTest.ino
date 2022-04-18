@@ -1,12 +1,12 @@
 #include <SpeedyStepper.h>
-#include <pindefs.h>
+#include "pindefs.h"
 // #define SCAN_STEP_PIN      26
 // #define SCAN_DIR_PIN       28
 // #define SCAN_ENABLE_PIN    24
 // #define SCAN_CS_PIN        42
 #define homeSwitch         3
 
-char* input = "Z000000";
+String input = "Z000000";
 
 const float homingSpeed = 400;
 const float maxHomingDistanceInMM = 600;
