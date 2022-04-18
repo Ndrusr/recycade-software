@@ -1,3 +1,9 @@
+#define MULT_LVL
+//#define LAPTOP_MANUAL
+//#define DEBUG
+//#define DIAGNOSTIC
+//#define SERIAL_DEBUG
+//#define JUMP_DEBUG
 #include <Arduino.h>
 #include"Defines.h"
 /*
@@ -23,142 +29,357 @@
 
 */
 #include<TeensyThreads.h>
-#include<AccelStepper.h>
-#include<MultiStepper.h>
+// #include<AccelStepper.h>
+// #include<MultiStepper.h>
 
-AccelStepper gameSteppers[] = {AccelStepper(1, STEPPER_STEP_X, STEPPER_DIR_X), AccelStepper(1, STEPPER_STEP_Y,STEPPER_DIR_Y)};
-AccelStepper scanSteppers[] = {AccelStepper(1, SCAN_STEP_SLIDER, SCAN_DIR_SLIDER), AccelStepper(1, SCAN_STEP_SORTING, SCAN_DIR_SORTING)};
-MultiStepper coreSteppers;
-bool debug{false};
-AccelStepper *allSteppers[4];
-float irReading{0};
 
-int threadID;
+bool update{false};
 
-bool whichMotor;
+int threadID[2]{0,66535};
+
+int32_t position[2]{0,0};
+
+float speed;
+
+bool depressed = false;
+
+byte* pointerToInput;
+
+bool acptMsg;
 
 void idle(){
-  Serial.print(0);
-  while(true){
-    
-  }
+  #ifdef LAPTOP_MANUAL
+    Serial.println("idle");
+  #endif
+  while(!digitalRead(STEP_PEDAL));
+  writeBytes[1] = (byte)'A';
+  tellMega();
+  Serial.println("idle terminate");
 }
 
-// void scanning(){
+/*
+  byte package:
+  byte 1 - invert x
+  byte 2 - x speed
+  */
+
+void jump(){
+  
+  float v = 3000;
+  int elapsedTime = 0;
+  elapsedMillis calculateStep = 0;
+  pointerToInput = readBytes;
+
+  while (!(*(pointerToInput + 5))){
+    
+    writeBytes[3] = (v < 0);
+    writeBytes[4] =  static_cast<uint8_t>(abs(v)/3000);
+    if (calculateStep > 50){
+      elapsedTime += calculateStep;
+      v += stepG*calculateStep*0.001;
+      calculateStep = 0;
+      #ifdef JUMP_DEBUG
+      Serial.println(v);
+      #endif
+    }
+    
+  }
+  
+}
+
+void convertPotToSPEED(){
+  elapsedMillis inputRun = 0;
+  while(!game_over){
+  speed = analogRead(INPUT_DIR);
+  if((speed > (POTMIN) && (speed < (POTMAX)))){
+    speed = 0;
+  }else{
+  speed = 255*((speed/(POTAVG))-1);
+  }
+  #ifndef DIAGNOSTIC
+  #ifdef DEBUG
+  //Serial.println("Run");
+  //Serial.println(speed);
+  #endif
+  if (speed < 0){
+    writeBytesBuffer[1] = byte(1);
+  }else{
+    writeBytesBuffer[1] = byte(0);
+  }
+  writeBytesBuffer[2] = static_cast<byte>(abs(speed));
+  int threadSt = threads.getState(threadID[1]);
+  #ifdef DEBUG
+  // Serial.print("ThreadState: ");
+  // Serial.println(threadSt);
+  #endif
+  if(digitalRead(STEP_PEDAL) && !depressed){
+    
+      #ifdef DEBUG
+      //Serial.print("Jump triggered.\n");
+      #endif
+      
+      if((threadSt != threads.RUNNING)){
+        depressed = true;
+        threads.kill(threadID[1]);
+        threadID[1] = threads.addThread(jump);
+      }
+      #ifdef DEBUG 
+      else{
+        //Serial.println("not starting new thread!");
+      } 
+      #endif
+    
+  }else if(!digitalRead(STEP_PEDAL) && depressed){
+    depressed = false;
+  } 
+  else {
+      
+    #ifndef MULT_LVL
+    if(threadSt != threads.RUNNING){
+      writeBytesBuffer[3] = writeBytes[1];
+      writeBytesBuffer[4] = static_cast<int>(writeBytes[2]*tan(radians(rampAngle)));
+        
+      }
+      
+    #else
+      if(threadSt != threads.RUNNING){
+        switch (readBytes[6])
+        {
+        case 0:
+          writeBytesBuffer[3] = 0;
+          writeBytesBuffer[4] = 0;
+          break;
+        
+        case 1:
+        writeBytesBuffer[3] = writeBytes[1];
+        writeBytesBuffer[4] = static_cast<uint8_t>(writeBytes[2]*tan(radians(rampAngle)));
+        break;
+
+        case 2:
+        writeBytesBuffer[3] = -writeBytes[1];
+        writeBytesBuffer[4] = static_cast<uint8_t>(writeBytes[2]*tan(radians(rampAngle)));
+        break;
+
+        case 3:
+        writeBytesBuffer[3] = 0;
+        writeBytesBuffer[4] = 0;
+        break;
+
+        default:
+          break;
+        }
+      }
+    #endif
+  }
+  #else
+  bool xOrY{false};
+  if(!xOrY){
+    writeBytesBuffer[0] = (speed < 0);
+    writeBytesBuffer[1] = static_cast<int>(abs(speed));
+    writeBytesBuffer[3] = 0;
+    writeBytesBuffer[4] = 0;
+  }else{
+    writeBytesBuffer[3] = (speed < 0);
+    writeBytesBuffer[4] = static_cast<int>(abs(speed));
+    writeBytesBuffer[0] = 0;
+    writeBytesBuffer[1] = 0;
+  }
+  if(digitalRead(STEP_PEDAL)&&!depressed){
+    xOrY = !xOrY;
+    depressed = true;
+  }else{
+    depressed = false;
+  }
+  #endif
+  if (inputRun > 50){
+    for(int i = 0; i < 8; i++){
+      writeBytes[i] = writeBytesBuffer[i];
+    }
+    inputRun = 0;
+    update = true;
+  }
+  }
+
+}
+
+void scanning(){
 //   if(detected){
 //     Serial.print();
 //     while(Serial.readBytes()!=)
 //   }
-// }
+ }
 
-void game_input(){
-
-}
 
 void game(){
-  Serial.print(2);
-  for(auto st: gameSteppers){
-    st.enableOutputs();
-  }
-  volatile bool game_over = false;
-  threadID = threads.addThread(game_input);
+  #ifdef DEBUG
+  Serial.println("GAME ON");
+  #endif
+  while(!(Serial));
+  // for(auto st: gameSteppers){
+  //   st.enableOutputs();
+  // }
+  game_over = false;
+  threads.setSliceMillis(25);
+  threadID[0] = threads.addThread(convertPotToSPEED);
+  threadID[1] = threads.addThread(jump);
+  elapsedMillis update_clock = 0;
   while(!game_over){
-    coreSteppers.run();
-    if(false){
-      game_over = !game_over;
+    //bool count = 0;
+    while(Serial.available() < 8);
+    readBytes[0] = Serial.read();
+    if(readBytes[0] == 0x5A){
+      if(Serial.read() == 0x44){
+        game_over = true;
+        return;
+      }
+    }else if(readBytes[0] == 0x5B){
+      for(int i = 1; i < 8; i++){
+        readBytes[i] = Serial.read();
+      }
     }
+
+    // coreSteppers.run();
+    if (update_clock > 25){
+      if(update){
+      tellMega();
+      update = false;
+      }
+
+      #ifdef SERIAL_DEBUG
+      Serial.println(writeBytes[1]);
+      Serial.println(writeBytes[4]);
+      #endif
+      // #ifdef DIAGNOSTIC
+      // Serial.print("(");
+      // Serial.print(position[0]);
+      // Serial.print(", ");
+      // Serial.print(position[1]);
+      // Serial.println(")");
+      // #endif
+      update_clock = 0;
+    }
+    // while(Serial2.read() != 0x5A);
+    // while(Serial2.read() != 0x5B){
+    //   position[count] = Serial2.read();
+    //   count = !count;
+    // }
+  
   }
-  threads.kill(threadID);
+  //Serial.print("Game Over!");
+  for(auto thread: threadID){
+    if(threads.getState(thread) == threads.RUNNING){
+    threads.kill(thread);}
+  }
   return;
 }
 
-void calibMotors(){
-  long target[2]{-100000, -100000};
-  coreSteppers.moveTo(target);
-  for(auto st : gameSteppers){
-    st.enableOutputs();
-    st.setSpeed(-500);
-  }
-  bool xStop = false, yStop = false;
-  while (!(xStop && yStop)){
-    coreSteppers.run();
-    if(digitalRead(11)){
-      xStop = !xStop;
-      gameSteppers[0].disableOutputs();
-    }
-    if(digitalRead(10)){
-      yStop = !yStop;
-      gameSteppers[1].disableOutputs();
-    }
-  }
-  for(auto st: gameSteppers){
-    st.setCurrentPosition(0);
-  }
-}
 
-void debugMotors(){
-  whichMotor = false;
-  if(debug){
-    if(whichMotor){
-      gameSteppers[0].enableOutputs();
-      gameSteppers[1].disableOutputs();
-      gameSteppers[0].runSpeed();
 
-    }else{
-      gameSteppers[1].enableOutputs();
-      gameSteppers[0].disableOutputs();
+// void debugMotors(){
+//   whichMotor = false;
+//   if(debug){
+//     if(whichMotor){
+//       gameSteppers[0].enableOutputs();
+//       gameSteppers[1].disableOutputs();
+//       gameSteppers[0].runSpeed();
+
+//     }else{
+//       gameSteppers[1].enableOutputs();
+//       gameSteppers[0].disableOutputs();
       
-      while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
-        gameSteppers[1].runSpeed();
-      }
-      delay(1000);
-      gameSteppers[1].setSpeed(gameSteppers[1].speed()*-1);
-    }
+//       while(gameSteppers[1].currentPosition()< LIMITS::STEP_Y){
+//         gameSteppers[1].runSpeed();
+//       }
+//       delay(1000);
+//       gameSteppers[1].setSpeed(gameSteppers[1].speed()*-1);
+//     }
     
     
-    // Serial.print("Running motors");
-    // delay(1000);
-  }
-}
+//     // Serial.print("Running motors");
+//     // delay(1000);
+//   }
+// }
 
 
 
 void setup() {
   
-  Serial.begin(57600);
-
-  pinMode(STEPPER_ACTIVATION_X, OUTPUT);
-  pinMode(STEPPER_ACTIVATION_Y, OUTPUT);
-  pinMode(SCAN_ACTIVATION, OUTPUT);
-
-  gameSteppers[0].setEnablePin(STEPPER_ACTIVATION_X);
-  gameSteppers[1].setEnablePin(STEPPER_ACTIVATION_Y);
-  scanSteppers[0].setEnablePin(SCAN_ACTIVATION);
-  scanSteppers[1].setEnablePin(SCAN_ACTIVATION); 
-
-  for(int i = 0; i < 2; i++){
-    allSteppers[i] = &gameSteppers[i];
-    allSteppers[i+2] = &scanSteppers[i];
-  }
-
-  for(AccelStepper *stp: allSteppers){
-    stp->setPinsInverted(false, false, false);
-    stp->disableOutputs();
-  }
-  int count = 0;
-  for(AccelStepper st: gameSteppers){
-    st.setMaxSpeed(1000);
-    st.setSpeed(400*(1*(!count)+(count)*tan(0.1309)));
-
-    coreSteppers.addStepper(st);
-    count++ ;
-  }
-  debug = true;
-  
+  Serial.begin(115200);
+  //Serial2.begin(115200);
+  while(!Serial);
+  pinMode(INPUT_DIR, INPUT);
+  pinMode(STEP_PEDAL, INPUT);
+  pinMode(13, OUTPUT);
+  Serial.println("Setup cleared");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  debugMotors();
+  //debugMotors();
+  
+  acptMsg = false;
+  
+  #ifndef LAPTOP_MANUAL
+  while(Serial.available() < 8 ){
+    digitalWrite(13, HIGH);
+    delay(500);
+    digitalWrite(13, LOW);
+    delay(500);
+  };
+  if(Serial.read() == HEADER){
+    readBytes[0] = HEADER;
+    for (int i = 0; i < 8; i++){
+      readBytes[i] = Serial.read();
+      if(readBytes[i] < 0){
+        i -= 1;
+      }
+    }
+    if(readBytes[7] == 0x0A){
+      acptMsg = true;
+    }
+  }
+  #else
+  #ifdef DEBUG
+  Serial.println("Awaiting input");
+  #endif
+  while(Serial.available() < 1);
+  #ifdef DEBUG
+  Serial.println("Input get");
+  #endif
+  if(Serial.read() == '2'){
+    readBytes[1] = 0x42;
+    acptMsg = true;
+  }
+  #endif
 
+  if(acptMsg){
+    switch (readBytes[1])
+    {
+    case 0x42:
+      digitalWrite(13, HIGH);
+      idle();
+      Serial.write(readBytes, 8);
+      digitalWrite(13, LOW);
+      break;
+    
+    case 0x41:
+      digitalWrite(13, HIGH);
+      scanning();
+      digitalWrite(13, LOW);
+      break;
+
+    case 0x43:
+      digitalWrite(13, HIGH);
+      game();
+      digitalWrite(13, LOW);
+      break;
+    
+    case 0x44:
+      break;
+
+    default:
+      idle();
+      break;
+    }
+  }
+  
 }
