@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 //#define DEBUG
-//#define LAPTOP_MANUAL
+#define LAPTOP_MANUAL
 
 /*
   X - STEPPER
@@ -64,7 +64,7 @@ void sendstuffToSerial(T a[], int len){
 #endif
 void calibMotors(){
   //Serial.print("beginning calibration step\n");
-  long target[2]{-100000, 100000};
+  long target[2]{-100000, -100000};
   coreSteppers.moveTo(target);
   #ifdef DEBUG
   sendStuffToSerial<float>(gameSteppers[0]->targetPosition(), gameSteppers[1]->targetPosition());
@@ -135,7 +135,7 @@ void calibMotors(){
     //   gameSteppers[1]->disableOutputs();
     // }
   }
-  digitalWrite(Y_STOP, LOW);
+  //digitalWrite(Y_STOP, LOW);
   #ifdef DEBUG
   Serial.print("Zero Found\n");
   #endif
@@ -159,7 +159,7 @@ void setup() {
 
   int activationPins[4] = {X_ENABLE_PIN, Y_ENABLE_PIN, SLIDER_ENABLE_PIN, SCAN_ENABLE_PIN};
 
-  pinMode(Y_STOP, OUTPUT);
+  //pinMode(Y_STOP, OUTPUT);
 
   int count = 0;
 
