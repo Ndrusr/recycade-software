@@ -11,7 +11,7 @@ void StepperConfig(){
   
   TMCdriver.begin();                                                                                                                                                                                                                                                                                                                            // UART: Init SW UART (if selected) with default 115200 baudrate
   TMCdriver.toff(5);                 // Enables driver in software
-  TMCdriver.rms_current(700);        // Set motor RMS current
+  TMCdriver.rms_current(900);        // Set motor RMS current
   TMCdriver.microsteps(2);         // Set microsteps to 1/2
 
   TMCdriver.en_spreadCycle(false);
@@ -26,63 +26,106 @@ void StepperConfig(){
   stepper.setSpeedInStepsPerSecond(50);
   stepper.setAccelerationInStepsPerSecondPerSecond(10);*/
 
-  stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
+  stepper.moveToHomeInMillimeters(directionTowardHome, 10, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
 }
 
-bool Scan(){
-  Serial.println("Scanning...");
-  
-  /*accel = 1000;                                         // Speed increase/decrease amount
-  maxSpeed = 50000;                                      // Maximum speed to be reached
-  speedChangeDelay = 100;                                // Delay between speed changes
-
-  TMCdriver.shaft(dir); // SET DIRECTION
-  
-  for (long i = 0; i <= maxSpeed; i = i + accel){             // Speed up to maxSpeed
-    TMCdriver.VACTUAL(i);                                     // Set motor speed
-    Serial << TMCdriver.VACTUAL() << endl;
-    delay(speedChangeDelay);
-  }
-
-  TMCdriver.VACTUAL(maxSpeed);
-  
-  for (long i = maxSpeed; i >=0; i = i - accel){              // Decrease speed to zero
-    TMCdriver.VACTUAL(i);
-    Serial << TMCdriver.VACTUAL() << endl;
-    delay(100);
-  }*/
-  for(int ii=0;ii<samples;ii++){
-    stepper.moveToPositionInMillimeters(ii*150/samples);
-    IR_1_Readings[ii]=readIR();
-    Serial.println(IR_1_Readings[ii]);
-  }
-  
-  
-  //stepper.moveToHomeInMillimeters(directionTowardHome, maxSpeed, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
-  float bottle_sum_e = sum_of_errors(IR_1_Readings);
-  Serial.println(bottle_sum_e);
-  return bottle_sum_e<50000.0;
-
-}
-
-float readIR(){
+float readIR(int pin){
   int sum_readings = 0;
   for(int jj=0;jj<avg_size;jj+=1){
-    sum_readings+=analogRead(IR_1);
+    sum_readings+=analogRead(pin);
     delay(10);
   }
 
   return sum_readings/avg_size;
 }
 
-float sum_of_errors(float IR_readings[]){
+void sum_of_errors_bottle(float IR_1_readings[], float IR_2_readings[]){
 
-  static float r[10];
-  float sum_of_e = 0;
+  bottle_sum_e_1 = 0;
+  bottle_sum_e_2 = 0;
 
-  for(int kk = 0;kk<10;kk++){
-    sum_of_e += (IR_readings[kk]-bottleModel[kk])*(IR_readings[kk]-bottleModel[kk]);
+  for(int kk = 0;kk<samples;kk++){
+    bottle_sum_e_1 += 0.01*(IR_1_readings[kk]-bottleModel[0][kk])*(IR_1_readings[kk]-bottleModel[0][kk]);
+    bottle_sum_e_2 += 0.01*(IR_2_readings[kk]-bottleModel[1][kk])*(IR_2_readings[kk]-bottleModel[1][kk]);
+    /*Serial.print("Errors: ");
+    Serial.print(bottle_sum_e_1);
+    Serial.print("\t");
+    Serial.println(bottle_sum_e_2);*/
+  }
+}
+
+void sum_of_errors_fcan(float IR_1_readings[], float IR_2_readings[]){
+
+  fcan_sum_e_1 = 0;
+  fcan_sum_e_2 = 0;
+
+  for(int kk = 0;kk<samples;kk++){
+    fcan_sum_e_1 += 0.01*(IR_1_readings[kk]-fatCanModel[0][kk])*(IR_1_readings[kk]-fatCanModel[0][kk]);
+    fcan_sum_e_2 += 0.01*(IR_2_readings[kk]-fatCanModel[1][kk])*(IR_2_readings[kk]-fatCanModel[1][kk]);
+  }
+}
+
+void sum_of_errors_tcan(float IR_1_readings[], float IR_2_readings[]){
+  
+  tcan_sum_e_1 = 0;
+  tcan_sum_e_2 = 0;
+  
+  for(int kk = 0;kk<samples;kk++){
+    tcan_sum_e_1 += 0.01*(IR_1_readings[kk]-tallCanModel[0][kk])*(IR_1_readings[kk]-tallCanModel[0][kk]);
+    tcan_sum_e_2 += 0.01*(IR_2_readings[kk]-tallCanModel[1][kk])*(IR_2_readings[kk]-tallCanModel[1][kk]);
+  }
+}
+
+bool metal_check(){
+  Serial.println("Metal Checking");
+  bool can = false;
+  lc_servo.write(70);
+  delay(500);
+  can = not digitalRead(inductive_sensor);
+  delay(100);
+  lc_servo.write(10);
+  delay(500);
+  return can;
+}
+
+String Scan(){
+  Serial.println("Scanning...");
+
+  for(int ii=0;ii<samples;ii++){
+    stepper.moveToPositionInMillimeters(ii*150/samples);
+    IR_1_Readings[ii]=min(readIR(IR_1),300);
+    IR_2_Readings[ii]=min(readIR(IR_2),300);
+    Serial.print(IR_1_Readings[ii]);
+    Serial.print("\t");
+    Serial.println(IR_2_Readings[ii]);
   }
 
-  return sum_of_e;
+  stepper.moveToHomeInMillimeters(directionTowardHome, 10, maxDistanceToMoveInMillimeters, homeLimitSwitchPin);
+  
+  sum_of_errors_bottle(IR_1_Readings,IR_2_Readings);
+  sum_of_errors_fcan(IR_1_Readings, IR_2_Readings);
+  sum_of_errors_tcan(IR_1_Readings, IR_2_Readings);
+  float r_error=min(max(bottle_sum_e_1,bottle_sum_e_2), min(max(fcan_sum_e_1,fcan_sum_e_2), max(tcan_sum_e_1, tcan_sum_e_2)));
+  Serial.print("Tall Can Error 1: ");
+  Serial.print(tcan_sum_e_1);
+  Serial.print("\tFat Can Error 1: ");
+  Serial.print(fcan_sum_e_1);
+  Serial.print("\tBottle Error 1: ");
+  Serial.println(bottle_sum_e_1);
+  Serial.print("Tall Can Error 2: ");
+  Serial.print(tcan_sum_e_2);
+  Serial.print("\tFat Can Error 2: ");
+  Serial.print(fcan_sum_e_2);
+  Serial.print("\tBottle Error 2: ");
+  Serial.println(bottle_sum_e_2);
+  Serial.println(r_error);
+  if(r_error<750){
+    if(metal_check()){
+      return "can";
+    }else{
+      return "bottle";
+    }
+  }else{
+    return "invalid";
+  }
 }

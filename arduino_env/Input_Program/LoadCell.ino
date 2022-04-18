@@ -11,7 +11,7 @@ long LoadCellTare(){
   x0/=long(avg_size);
 
   lc_servo.attach(dispense_pin);
-  lc_servo.write(0);
+  lc_servo.write(20);
 
   return x0;
 }
@@ -25,7 +25,7 @@ bool mass_reading(long x0){
   reading/=long(avg_size);
   reading -= x0;
   Serial.println(reading);
-  if (reading < -20000 && reading > -50000){
+  if (reading < -15000 && reading > -55000){
     return true;
   }else{
     return false;
@@ -34,6 +34,6 @@ bool mass_reading(long x0){
 
 void dispense(){
   lc_servo.write(180);
-  delay(1000);
-  lc_servo.write(0);
+  delay(2000);
+  lc_servo.write(20);
 }
