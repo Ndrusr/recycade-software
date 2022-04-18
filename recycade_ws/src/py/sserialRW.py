@@ -14,7 +14,7 @@ while(True):
     
     megaRead = serMega.readline()
 
-    if(megaRead == "ZA00000"):
+    if(megaRead == actionmsg):
         print("serial get!")
         serUNO.write(actionmsg)
         while(not unoRead[0] == 'Z' and len(unoRead) == 7):
