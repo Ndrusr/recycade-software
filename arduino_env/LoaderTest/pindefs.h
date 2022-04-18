@@ -13,4 +13,4 @@
 #define SCAN_ENABLE_PIN    24
 #define SCAN_CS_PIN        42
 
-#define PEDAL_PIN           1
+#define PEDAL_PIN           2
