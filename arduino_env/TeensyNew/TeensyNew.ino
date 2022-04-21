@@ -145,6 +145,7 @@ void inputs(){
 }
 void game(){
   bool game_over{false};
+  Serial.print("ZG10000\n");
   threadIDs[0] = threads.addThread(gravity);
   while(!game_over){
     while (Serial.available()<8);
