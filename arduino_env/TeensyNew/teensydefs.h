@@ -40,7 +40,7 @@ private:
 };
 void idling(){
   Serial.println("Idled");
-  Serial.flush();
+  
   while(!digitalRead(PEDAL_PIN));
   Serial.print("ZA00000\n");
   
