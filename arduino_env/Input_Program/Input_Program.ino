@@ -121,7 +121,7 @@ void loop() {
 
     while(!mass_reading(tare)){}
 
-    closeDoor(60);
+    closeDoor(80);
 
     result = Scan();
   
@@ -141,7 +141,7 @@ void loop() {
       //Wait for user to remove invalid object
       while(mass_reading(tare)){}
       delay(1000);
-      closeDoor(60);
+      closeDoor(80);
     }
 
     //reset load cell reading and bottle_cap input
