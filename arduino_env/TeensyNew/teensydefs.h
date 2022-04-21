@@ -40,8 +40,11 @@ private:
 };
 void idling(){
   Serial.println("Idled");
-  
-  while(!digitalRead(PEDAL_PIN));
+  while(!digitalRead(PEDAL_PIN)){
+    if(Serial.available >= 8){
+      return;
+    }
+  }
   Serial.print("ZA00000\n");
   
 }
