@@ -15,7 +15,7 @@ int potRead;
 bool jumping{false};
 bool depressed{false};
 
-StateMachine teensySM;
+//StateMachine teensySM;
 
 void setup() {
   // put your setup code here, to run once:
@@ -179,14 +179,14 @@ void loop() {
   while(Serial.available ()< 8);
   readlen = Serial.readBytesUntil('\n', inputBuffer, BUFF_SIZE);
   if(inputBuffer[0] == (byte)'Z' && readlen == 7){
-   teensySM.switchStates(inputBuffer[1]);
-   switch(teensySM.getSMState()){
-    case 0:
+   //teensySM.switchStates(inputBuffer[1]);
+   switch(inputBuffer[1]){
+    case byte('I'):
       idling();
       break;
-    case 1:
+    case byte('A'):
       break;
-    case 2:
+    case byte('G'):
       game();
       //Serial.print("PLACEHOLDER");
       break;
