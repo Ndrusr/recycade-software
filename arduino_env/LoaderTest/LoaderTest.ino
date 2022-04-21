@@ -1,19 +1,58 @@
 #include <SpeedyStepper.h>
+#include <Servo.h>
+#include<SharpIR.h>
+#include<AccelStepper.h>
+
 #include "pindefs.h"
 // #define SCAN_STEP_PIN      26
 // #define SCAN_DIR_PIN       28
 // #define SCAN_ENABLE_PIN    24
 // #define SCAN_CS_PIN        42
 #define homeSwitch         3
+#define BUFFER_SIZE       50
+int inputLen;
 
-String input = "Z000000";
+char input[BUFFER_SIZE];
+
+Servo tiltServo;
 
 const float homingSpeed = 400;
 const float maxHomingDistanceInMM = 600;
 const int directionToHome = 1;
 
-SpeedyStepper stepper;
+uint16_t positions[2]{0,0};
 
+SpeedyStepper stepper;
+AccelStepper* gameSteppers[2] {new AccelStepper(1, X_STEP_PIN, X_DIR_PIN), new AccelStepper(1, Y_STEP_PIN, Y_DIR_PIN)};
+
+void push(){
+  stepper.moveToPositionInMillimeters(-540);
+  stepper.moveToHomeInMillimeters(directionToHome,homingSpeed,maxHomingDistanceInMM, homeSwitch);
+}
+
+void coreCalib(){
+  for (auto st: gameSteppers){
+    st->enableOutputs();
+    st->moveTo(-10000);
+    st->setSpeed(-200);
+  }
+  while(digitalRead(X_STOP)){
+    gameSteppers[0]->runSpeed();
+  }
+  gameSteppers[0]->stop();
+  gameSteppers[0]->disableOutputs();
+
+  bool yStop{false};
+
+  while(!yStop){
+    gameSteppers[1]->runSpeed();
+    //add conditional here
+  }
+
+  for(auto st: gameSteppers){
+    st->setCurrentPosition(0);
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -22,14 +61,34 @@ void setup() {
   pinMode(SCAN_STEP_PIN, OUTPUT);
   pinMode(SCAN_DIR_PIN,OUTPUT);
   pinMode(homeSwitch,INPUT);
+  pinMode(X_STOP, INPUT);
   digitalWrite(SCAN_ENABLE_PIN,LOW);
 
   pinMode(PEDAL_PIN, INPUT);
+  pinMode(STOP_LIFT, INPUT);
+  tiltServo.attach(TWIST_SERVO);
+  tiltServo.write(TWIST_BTL);
+
+  gameSteppers[0]->setEnablePin(X_ENABLE_PIN);
+  gameSteppers[1]->setEnablePin(Y_ENABLE_PIN);
+
+  gameSteppers[0]->setPinsInverted(false, false, true);
+  gameSteppers[1]->setPinsInverted(true, false, true);
+
+  int count = 0;
+  for(AccelStepper *st: gameSteppers){
+    st->enableOutputs();
+    st->setMaxSpeed(3000);
+    st->setSpeed(1500*(count+1));
+
+    st->disableOutputs();
+    count++ ;
+  }
   
-
-  Serial.println(digitalRead(homeSwitch));
+  // Serial.println(digitalRead(homeSwitch));
   stepper.connectToPins(SCAN_STEP_PIN,SCAN_DIR_PIN);
-
+  
+  
   stepper.setStepsPerMillimeter(5);
   stepper.setSpeedInMillimetersPerSecond(200);
   stepper.setAccelerationInMillimetersPerSecondPerSecond(1500);
@@ -43,15 +102,42 @@ void setup() {
   
 }
 
+game(){
+  for(auto st:gameSteppers){
+    st->enableOutputs();
+  }
+  gameSteppers[1]->moveTo(120);
+  while(gameSteppers[1]->distanceToGo != 0){
+    gameSteppers[1]->runSpeed();
+  }
+  bool game{true};
+  while(game){
+    positions[0] = gameSteppers[0]->currentPosition();
+    positions[1] = gameSteppers[1]->currentPosition();
+    
+  }
+
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
-  while(!digitalRead(PEDAL_PIN));
-  Serial.println("ZA00000");
   while(Serial.available() < 8);
-  input = Serial.readStringUntil('\n');
-  if(input == "ZB00000\n"){
-    stepper.moveToPositionInMillimeters(-540);
-    stepper.moveToPositionInMillimeters(0);
+  inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
+  if(input[0] == (byte)'Z' && input[1] == (byte)'B' && inputLen == 7){
+    delay(1000);
+    while(digitalRead(STOP_LIFT));
+    while(!digitalRead(STOP_LIFT));
+    push();
+    while(Serial.available() < 8);
+    inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
+    if(input[0] ==(byte)'Z' && input[1] == (byte)'G'){
+      Serial.print("ZG10000\n");
+      game();
+    }else{
+      Serial.print("ZG00000\n");
+    }
+  }else{
+    Serial.println(input);
   }
   Serial.flush();
 }
