@@ -1,4 +1,4 @@
-#define PEDAL_PIN 13
+#define PEDAL_PIN 22
 #define DIR_POT   14
 
 #define X_LIMIT  750
