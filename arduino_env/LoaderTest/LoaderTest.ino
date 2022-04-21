@@ -129,6 +129,8 @@ game(){
       gameSteppers[0]->setSpeed((float)((input[1] + (input[2] << 8) + (input[3] << 16) + (input[4] << 24)-0x80000000)/100));
       gameSteppers[1]->setSpeed((float)((input[5] + (input[6] << 8) + (input[7] << 16) + (input[8] << 24)-0x80000000)/50));
     }
+    gameSteppers[0]->runSpeed();
+    gameSteppers[1]->runSpeed();
   }
 
 }
