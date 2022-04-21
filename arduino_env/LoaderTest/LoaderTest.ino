@@ -14,6 +14,8 @@ int inputLen;
 
 char input[BUFFER_SIZE];
 
+byte game_msg[8]{byte('G'), 0, 0, 0 ,0, 0, 0, byte('\n')};
+
 Servo tiltServo;
 
 const float homingSpeed = 400;
@@ -112,9 +114,21 @@ game(){
   }
   bool game{true};
   while(game){
-    positions[0] = gameSteppers[0]->currentPosition();
-    positions[1] = gameSteppers[1]->currentPosition();
-    
+    positions[0] = (int)((gameSteppers[0]->currentPosition())/10);
+    positions[1] = (int)((gameSteppers[1]->currentPosition())/20);
+    game_msg[1] = (byte)(positions[0] & 0xff);
+    game_msg[2] = (byte)((positions[0] >> 8) & 0xff);
+    game_msg[3] = (byte)(positions[1] & 0xff);
+    game_msg[4] = (byte)((positions[1] >> 8) & 0xff);
+
+    Serial.write(game_msg, 8);
+
+    while(Serial.available() < 10);
+    inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
+    if(input[0] == byte('G') && inputLen == 9){
+      gameSteppers[0]->setSpeed((float)((input[1] + (input[2] << 8) + (input[3] << 16) + (input[4] << 24)-0x80000000)/100));
+      gameSteppers[1]->setSpeed((float)((input[5] + (input[6] << 8) + (input[7] << 16) + (input[8] << 24)-0x80000000)/50));
+    }
   }
 
 }
