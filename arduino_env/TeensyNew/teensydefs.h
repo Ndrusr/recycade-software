@@ -16,6 +16,7 @@ byte velMsg[10]{(byte)'G', 0, 0, 0, 0, 0, 0, 0, 0, 0x0A };
 
 int WORK;
 #define debounceDelay 50 
+unsigned long lastDebounceTime = 0;
 
 class Ramp
 {
@@ -44,13 +45,21 @@ private:
 void idling(){
   Serial.println("Idled");
   int lastState = LOW;
-  while(!WORK){
-    if(Serial.available >= 8){
+  while(true){
+    if(Serial.available() >= 8){
       return;
     }
     WORK = digitalRead(PEDAL_PIN);
-    if(lastState)
-  }
+    if (WORK != lastState) {
+    // reset the debouncing timer
+      lastDebounceTime = millis();
+    }
+      if ((millis() - lastDebounceTime) > debounceDelay) {
+        if(WORK){
+          break;
+        }
+      }
+    }
   Serial.print("ZA00000\n");
   return;
 }
