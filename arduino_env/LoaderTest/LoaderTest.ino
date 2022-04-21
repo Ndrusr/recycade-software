@@ -27,9 +27,40 @@ uint16_t positions[2]{0,0};
 SpeedyStepper stepper;
 AccelStepper* gameSteppers[2] {new AccelStepper(1, X_STEP_PIN, X_DIR_PIN), new AccelStepper(1, Y_STEP_PIN, Y_DIR_PIN)};
 
+//IR Sensor
+SharpIR ir_sensor(SharpIR::GP2Y0A02YK0F, A0);
+const int packets = 20;
+const int samples = 10;
+float reading;
+bool hit;
+int ir_count;
+
 void push(){
   stepper.moveToPositionInMillimeters(-540);
   stepper.moveToHomeInMillimeters(directionToHome,homingSpeed,maxHomingDistanceInMM, homeSwitch);
+}
+
+float getIR(){
+  reading = 0;
+  for(int i=0;i<packets;i++){
+    reading+=ir_sensor.getDistance();
+  }
+
+  return reading/packets;
+}
+
+bool check_hit(){
+  for(int i = 0;i<samples;i++){
+    if(getIR()>30){
+      ir_count++;
+    }
+
+    if(ir_count>3){
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void coreCalib(){
@@ -48,8 +79,12 @@ void coreCalib(){
 
   while(!yStop){
     gameSteppers[1]->runSpeed();
-    //add conditional here
+    if(getIR()>60){
+      yStop=true;
+    }
   }
+  gameSteppers[1]->stop();
+  gameSteppers[1]->disableOutputs();
 
   for(auto st: gameSteppers){
     st->setCurrentPosition(0);
@@ -143,6 +178,7 @@ void loop() {
     delay(1000);
     while(digitalRead(STOP_LIFT));
     while(!digitalRead(STOP_LIFT));
+    delay(2000);
     push();
     while(Serial.available() < 8);
     inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
