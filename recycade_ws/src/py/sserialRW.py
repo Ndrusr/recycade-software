@@ -18,9 +18,12 @@ def game():
     megaRead = serMega.readline()
     teensyRead = serTeensy.readline()
     if(megaRead == b"ZG10000\n" and teensyRead == b"ZG10000\n"):
+        print("Game running")
         while(megaRead != b"ZG20000\n" and megaRead != b"ZG30000\n"):
-            
             megaRead = serMega.readline()
+            while len(megaRead) < 8:
+                megaRead = serMega.readline()
+                print(megaRead)
             if(megaRead == b"ZG20000\n"):
                 print("GAME OVER")
                 break
@@ -29,11 +32,15 @@ def game():
                 break
             if(megaRead[0] == b'G'):
                 serTeensy.write(megaRead)
-                teensyRead = serTeensy.readline()
-                if(teensyRead[0] == b'G'):
-                    serMega.write(teensyRead)
-                else:
-                    print(teensyRead)
+                print("mega -> teensy")
+                while(teensyRead[0] != b'G'):
+                    teensyRead = serTeensy.readline()
+                    
+                    if(teensyRead[0] == b'G'):
+                        serMega.write(teensyRead)
+                        print("teensy->mega")
+                    else:
+                        print(teensyRead)
             
             else:
                 print(megaRead)
