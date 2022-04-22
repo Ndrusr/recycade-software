@@ -16,10 +16,15 @@
 #define TWIST_SERVO         4
 #define TWIST_NEU          15
 #define TWIST_BTL           0
-#define TWIST_CAN          30
+#define TWIST_CAN          40
+
+#define BOTTLE_DISP         6
+#define CAN_DISP            5
+#define RLS_SRV            11
+
+#define SORT_IR            19
 
 #define X_STOP              2
 
 #define PEDAL_PIN          40
 #define STOP_LIFT          49
-

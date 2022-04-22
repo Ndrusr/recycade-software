@@ -2,6 +2,7 @@
 #include <Servo.h>
 #include<SharpIR.h>
 #include<AccelStepper.h>
+#include<ArduinoQueue.h>
 
 #include "pindefs.h"
 // #define SCAN_STEP_PIN      26
@@ -15,8 +16,12 @@ int inputLen;
 char input[BUFFER_SIZE];
 
 byte game_msg[8]{byte('G'), 0, 0, 0 ,0, 0, 0, byte('\n')};
+ArduinoQueue<char> bottleCanQueue(10);
 
 Servo tiltServo;
+Servo releaseServo;
+Servo bottleServo;
+Servo canServo;
 
 const float homingSpeed = 400;
 const float maxHomingDistanceInMM = 600;
@@ -36,6 +41,9 @@ bool hit;
 int ir_count;
 
 void push(){
+  delay(1000);
+  while(digitalRead(STOP_LIFT));
+  while(!digitalRead(STOP_LIFT));
   stepper.moveToPositionInMillimeters(-540);
   stepper.moveToHomeInMillimeters(directionToHome,homingSpeed,maxHomingDistanceInMM, homeSwitch);
 }
@@ -61,6 +69,37 @@ bool check_hit(){
   }
 
   return true;
+}
+
+void push_out(){
+  char bOrC = bottleCanQueue.dequeue();
+  if(bOrC == 'b'){
+    tiltServo.write(TWIST_BTL);
+    delay(1000);
+    tiltServo.write(TWIST_NEU);
+    releaseServo.write(20);
+    delay(2000);
+    releaseServo.write(110);
+    bottleCanQueue.enqueue('c');
+    canServo.write(25)
+    delay(2000);
+    canServo.write(120);
+
+  }else{
+    tiltServo.write(TWIST_CAN);
+    delay(1000);
+    tiltServo.write(TWIST_NEU);
+    releaseServo.write(20);
+    delay(2000);
+    releaseServo.write(110);
+    bottleCanQueue.enqueue('b');
+    bottleServo.write(150)
+    delay(2000);
+    bottleServo.write(60);
+
+  }
+  tiltServo.write(TWIST_BTL);
+  push();
 }
 
 void coreCalib(){
@@ -99,12 +138,21 @@ void setup() {
   pinMode(SCAN_DIR_PIN,OUTPUT);
   pinMode(homeSwitch,INPUT);
   pinMode(X_STOP, INPUT);
+  pinMode(SORT_IR, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(SORT_IR), push_out, RISING);
+
   digitalWrite(SCAN_ENABLE_PIN,LOW);
 
-  pinMode(PEDAL_PIN, INPUT);
+  //pinMode(PEDAL_PIN, INPUT);
   pinMode(STOP_LIFT, INPUT);
   tiltServo.attach(TWIST_SERVO);
   tiltServo.write(TWIST_BTL);
+  releaseServo.attach(RLS_SRV);
+  releaseServo.write(110);
+  bottleServo.attach(BOTTLE_DISP);
+  canServo.attach(CAN_DISP);
+
 
   gameSteppers[0]->setEnablePin(X_ENABLE_PIN);
   gameSteppers[1]->setEnablePin(Y_ENABLE_PIN);
@@ -175,9 +223,6 @@ void loop() {
   while(Serial.available() < 8);
   inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
   if(input[0] == (byte)'Z' && input[1] == (byte)'B' && inputLen == 7){
-    delay(1000);
-    while(digitalRead(STOP_LIFT));
-    while(!digitalRead(STOP_LIFT));
     
     push();
     Serial.print("ZB10000\n");
@@ -188,6 +233,12 @@ void loop() {
       game();
     }else{
       Serial.print("ZG00000\n");
+    }
+  }else if(input[0] == (byte)'Z' && (input[1] == (byte)'b' || input[1] == (byte)'c')){
+    if(input[1] == (byte)'b'){
+      bottleCanQueue.enqueue('b')
+    }else{
+      bottleCanQueue.enqueue('c')
     }
   }else{
     Serial.println(input);
