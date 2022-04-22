@@ -161,8 +161,8 @@ game(){
     while(Serial.available() < 10);
     inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
     if(input[0] == byte('G') && inputLen == 9){
-      gameSteppers[0]->setSpeed((float)((input[1] + (input[2] << 8) + (input[3] << 16) + (input[4] << 24)-0x80000000)/100));
-      gameSteppers[1]->setSpeed((float)((input[5] + (input[6] << 8) + (input[7] << 16) + (input[8] << 24)-0x80000000)/50));
+      gameSteppers[0]->setSpeed((float)((long(input[1]) + long(input[2] << 8) + long(input[3] << 16) + long(input[4] << 24))/100));
+      gameSteppers[1]->setSpeed((float)((long(input[5]) + long(input[6] << 8) + long(input[7] << 16) + long(input[8] << 24))/50));
     }
     gameSteppers[0]->runSpeed();
     gameSteppers[1]->runSpeed();
@@ -180,6 +180,7 @@ void loop() {
     while(!digitalRead(STOP_LIFT));
     delay(2000);
     push();
+    Serial.print("ZB10000\n");
     while(Serial.available() < 8);
     inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
     if(input[0] ==(byte)'Z' && input[1] == (byte)'G'){
