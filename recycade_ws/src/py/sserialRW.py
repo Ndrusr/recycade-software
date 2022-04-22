@@ -87,8 +87,10 @@ while(True):
             elif(unoRead == b"Zcan000\n" or unoRead == b"Zbottle\n"):
                 if(unoRead == b"Zcan000\n"):
                     print("can")
+                    serMega.write(unoRead)
                 elif(unoRead == b"Zbottle\n"):
                     print("bottle")
+                    serMega.write(unoRead)
             else:
                 print(unoRead)
     else:
