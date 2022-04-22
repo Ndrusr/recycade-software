@@ -178,7 +178,7 @@ void loop() {
     delay(1000);
     while(digitalRead(STOP_LIFT));
     while(!digitalRead(STOP_LIFT));
-    delay(2000);
+    
     push();
     Serial.print("ZB10000\n");
     while(Serial.available() < 8);
