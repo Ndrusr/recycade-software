@@ -77,9 +77,15 @@ while(True):
         unoRead = serUNO.readline()
         while(not (unoRead[0] == 'Z' and len(unoRead) == 8)):
             unoRead = serUNO.readline()
-            if(unoRead == acceptmsg or unoRead == rejectmsg):
+            if(unoRead == b"Zcan000\n" or unoRead == b"Zbottle\n" or unoRead == rejectmsg):
                 print("signal get")
-                if(unoRead == acceptmsg):
+                if(unoRead == b"Zcan000\n" or unoRead == b"Zbottle\n"):
+                    if(unoRead == b"Zcan000\n"):
+                        print("can")
+                        serMega.write(unoRead)
+                    elif(unoRead == b"Zbottle\n"):
+                        print("bottle")
+                    serMega.write(unoRead)
                     serMega.write(pushmsg)
                     print('accepting')
                     while(megaRead != b"ZB10000\n"):
@@ -91,13 +97,7 @@ while(True):
                     serMega.write(b"Z000000\n")
                     print('rejected')
                     break
-            elif(unoRead == b"Zcan000\n" or unoRead == b"Zbottle\n"):
-                if(unoRead == b"Zcan000\n"):
-                    print("can")
-                    serMega.write(unoRead)
-                elif(unoRead == b"Zbottle\n"):
-                    print("bottle")
-                    serMega.write(unoRead)
+                
             else:
                 print(unoRead)
     else:
