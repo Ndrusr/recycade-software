@@ -86,7 +86,6 @@ while(True):
                     elif(unoRead == b"Zbottle\n"):
                         print("bottle")
                     serMega.write(unoRead)
-                    serMega.write(pushmsg)
                     print('accepting')
                     while(megaRead != b"ZB10000\n"):
                         megaRead = serMega.readline()

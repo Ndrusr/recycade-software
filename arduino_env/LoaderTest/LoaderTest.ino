@@ -222,8 +222,12 @@ void loop() {
   // put your main code here, to run repeatedly:
   while(Serial.available() < 8);
   inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
-  if(input[0] == (byte)'Z' && input[1] == (byte)'B' && inputLen == 7){
-    
+  if(input[0] == (byte)'Z' && (input[1] == (byte)'b' || input[1] == (byte)'c')){
+    if(input[1] == (byte)'b'){
+      bottleCanQueue.enqueue('b')
+    }else{
+      bottleCanQueue.enqueue('c')
+    }
     push();
     Serial.print("ZB10000\n");
     while(Serial.available() < 8);
@@ -234,12 +238,7 @@ void loop() {
     }else{
       Serial.print("ZG00000\n");
     }
-  }else if(input[0] == (byte)'Z' && (input[1] == (byte)'b' || input[1] == (byte)'c')){
-    if(input[1] == (byte)'b'){
-      bottleCanQueue.enqueue('b')
-    }else{
-      bottleCanQueue.enqueue('c')
-    }
+    
   }else{
     Serial.println(input);
   }
