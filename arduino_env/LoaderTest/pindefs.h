@@ -18,8 +18,8 @@
 #define TWIST_BTL           0
 #define TWIST_CAN          40
 
-#define BOTTLE_DISP         6
-#define CAN_DISP            5
+#define BOTTLE_DISP         5
+#define CAN_DISP            6
 #define RLS_SRV            11
 
 #define SORT_IR            19

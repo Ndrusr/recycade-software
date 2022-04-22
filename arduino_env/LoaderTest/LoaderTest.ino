@@ -81,7 +81,7 @@ void push_out(){
     delay(2000);
     releaseServo.write(110);
     bottleCanQueue.enqueue('c');
-    canServo.write(25)
+    canServo.write(25);
     delay(2000);
     canServo.write(120);
 
@@ -93,7 +93,7 @@ void push_out(){
     delay(2000);
     releaseServo.write(110);
     bottleCanQueue.enqueue('b');
-    bottleServo.write(150)
+    bottleServo.write(150);
     delay(2000);
     bottleServo.write(60);
 
@@ -224,9 +224,9 @@ void loop() {
   inputLen = Serial.readBytesUntil('\n', input, BUFFER_SIZE);
   if(input[0] == (byte)'Z' && (input[1] == (byte)'b' || input[1] == (byte)'c')){
     if(input[1] == (byte)'b'){
-      bottleCanQueue.enqueue('b')
+      bottleCanQueue.enqueue('b');
     }else{
-      bottleCanQueue.enqueue('c')
+      bottleCanQueue.enqueue('c');
     }
     push();
     Serial.print("ZB10000\n");
